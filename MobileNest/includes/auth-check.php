@@ -1,73 +1,53 @@
 <?php
 /**
- * AUTH-CHECK.PHP
- * 
- * File ini menangani:
- * 1. Proteksi halaman user & admin
- * 2. Role-Based Access Control (RBAC) dengan tabel admin terpisah
- * 3. Session management
- * 4. CSRF token generation & verification
- * 5. Helper functions untuk security
- * 
- * 🔑 PENTING: Sistem menggunakan tabel ADMIN terpisah untuk diferensiasi role
- * User yang ada di tabel admin = ADMIN
- * User yang TIDAK ada di tabel admin = REGULAR USER
+ * AUTH-CHECK.PHP - Simplified & Stable Version
+ * Menangani authentication & authorization untuk User dan Admin
  */
 
-// Mulai session jika belum dimulai
+// Start session if not started
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 
-// Include database connection
-if (!isset($conn)) {
-    require_once __DIR__ . '/../config.php';  // FIX: Tambah ../ untuk ke parent folder
-}
-
 /**
- * 🔐 PROTEKSI LOGIN - USER
- * Memastikan hanya user yang login yang bisa akses halaman user
- * Jika admin mencoba akses, redirect ke admin panel
+ * Require user login
+ * Redirect to login if not authenticated
  */
 function require_user_login() {
-    // 1. Cek apakah ada session user atau admin
-    if (!isset($_SESSION['user']) && !isset($_SESSION['admin'])) {
-        $_SESSION['error'] = '🔒 Anda harus login terlebih dahulu!';
+    if (!isset($_SESSION['user'])) {
+        $_SESSION['redirect_after_login'] = $_SERVER['REQUEST_URI'];
         header('Location: ' . SITE_URL . '/user/login.php');
         exit;
     }
-    
-    // 2. Jika yang login adalah admin, redirect ke admin panel
-    if (isset($_SESSION['admin']) && !isset($_SESSION['user'])) {
+}
+
+/**
+ * Require admin login
+ * Redirect to admin login if not authenticated
+ */
+function require_admin_login() {
+    if (!isset($_SESSION['admin'])) {
+        header('Location: ' . SITE_URL . '/admin/login.php');
+        exit;
+    }
+}
+
+/**
+ * Require guest (not logged in)
+ */
+function require_guest() {
+    if (isset($_SESSION['user'])) {
+        header('Location: ' . SITE_URL . '/index.php');
+        exit;
+    }
+    if (isset($_SESSION['admin'])) {
         header('Location: ' . SITE_URL . '/admin/dashboard.php');
         exit;
     }
 }
 
 /**
- * 🔒 PROTEKSI LOGIN - ADMIN
- * Memastikan hanya admin yang bisa akses halaman admin
- * Jika user biasa mencoba akses, redirect ke user page
- */
-function require_admin_login() {
-    // 1. Cek apakah ada session admin
-    if (!isset($_SESSION['admin'])) {
-        $_SESSION['error'] = '🔒 Anda harus login sebagai admin!';
-        header('Location: ' . SITE_URL . '/user/login.php');
-        exit;
-    }
-    
-    // 2. Jika yang login adalah user biasa, redirect ke user page
-    if (isset($_SESSION['user']) && !isset($_SESSION['admin'])) {
-        header('Location: ' . SITE_URL . '/user/pesanan.php');
-        exit;
-    }
-}
-
-/**
- * 🔍 CEK ADMIN VIA DATABASE
- * Digunakan untuk double-check apakah user adalah admin
- * (untuk verifikasi tambahan di tengah proses)
+ * Check if user is admin via database
  */
 function is_user_admin($user_id, $conn) {
     $sql = "SELECT id_admin FROM admin WHERE id_user = ?";
@@ -86,7 +66,21 @@ function is_user_admin($user_id, $conn) {
 }
 
 /**
- * 📄 GET USER/ADMIN ID
+ * Get current user ID
+ */
+function get_current_user_id() {
+    return isset($_SESSION['user']) ? (int)$_SESSION['user'] : null;
+}
+
+/**
+ * Get current admin ID
+ */
+function get_current_admin_id() {
+    return isset($_SESSION['admin']) ? (int)$_SESSION['admin'] : null;
+}
+
+/**
+ * Get user ID (user or admin)
  */
 function get_user_id() {
     if (isset($_SESSION['user'])) {
@@ -97,36 +91,41 @@ function get_user_id() {
     return null;
 }
 
-function get_admin_id() {
-    return $_SESSION['admin'] ?? null;
-}
-
+/**
+ * Get user name
+ */
 function get_user_name() {
     if (isset($_SESSION['user_name'])) {
         return $_SESSION['user_name'];
     } elseif (isset($_SESSION['admin_name'])) {
         return $_SESSION['admin_name'];
     }
-    return 'Unknown';
+    return 'User';
 }
 
 /**
- * ✅ CEK LOGIN STATUS
+ * Check if user is logged in
  */
 function is_user_logged_in() {
     return isset($_SESSION['user']);
 }
 
+/**
+ * Check if admin is logged in
+ */
 function is_admin_logged_in() {
     return isset($_SESSION['admin']);
 }
 
+/**
+ * Check if anyone is logged in
+ */
 function is_logged_in() {
     return isset($_SESSION['user']) || isset($_SESSION['admin']);
 }
 
 /**
- * 🚳 GET USER ROLE
+ * Get user role
  */
 function get_user_role() {
     if (isset($_SESSION['admin'])) {
@@ -138,7 +137,7 @@ function get_user_role() {
 }
 
 /**
- * 🔐 LOGOUT FUNCTIONS
+ * Logout user
  */
 function user_logout() {
     unset($_SESSION['user']);
@@ -146,21 +145,27 @@ function user_logout() {
     unset($_SESSION['user_email']);
 }
 
+/**
+ * Logout admin
+ */
 function admin_logout() {
     unset($_SESSION['admin']);
     unset($_SESSION['admin_name']);
     unset($_SESSION['admin_email']);
 }
 
+/**
+ * Logout all
+ */
 function logout_all() {
-    user_logout();
-    admin_logout();
-    session_destroy();
+    $_SESSION = [];
+    if (session_status() === PHP_SESSION_ACTIVE) {
+        session_destroy();
+    }
 }
 
 /**
- * 💳 CSRF TOKEN FUNCTIONS
- * Untuk protect dari Cross-Site Request Forgery attacks
+ * Generate CSRF token
  */
 function generate_csrf_token() {
     if (empty($_SESSION['csrf_token'])) {
@@ -169,6 +174,9 @@ function generate_csrf_token() {
     return $_SESSION['csrf_token'];
 }
 
+/**
+ * Verify CSRF token
+ */
 function verify_csrf_token($token) {
     if (empty($_SESSION['csrf_token']) || empty($token)) {
         return false;
@@ -177,23 +185,21 @@ function verify_csrf_token($token) {
 }
 
 /**
- * 🆕 HASH PASSWORD
- * Generate hash untuk password baru
+ * Hash password
  */
 function hash_password($password) {
     return password_hash($password, PASSWORD_BCRYPT, ['cost' => 10]);
 }
 
 /**
- * ✅ VERIFY PASSWORD
+ * Verify password
  */
 function verify_password($password, $hash) {
     return password_verify($password, $hash);
 }
 
 /**
- * 📁 GET BASE URL
- * Helper untuk generate base URL aplikasi
+ * Get base URL
  */
 function getBaseUrl() {
     $protocol = isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? 'https' : 'http';
@@ -204,41 +210,4 @@ function getBaseUrl() {
     }
     return $protocol . '://' . $host . $basePath;
 }
-
-/**
- * 📋 LOG ACTIVITY (optional)
- * Catat setiap aktivitas penting untuk audit
- */
-function log_activity($action, $details, $conn) {
-    $user_id = get_user_id();
-    $role = get_user_role();
-    $ip = $_SERVER['REMOTE_ADDR'];
-    $timestamp = date('Y-m-d H:i:s');
-    
-    // TODO: Buat tabel activity_log untuk audit trail
-    // INSERT INTO activity_log (user_id, role, action, details, ip, timestamp)
-    // VALUES (?, ?, ?, ?, ?, ?)
-}
-
-/**
- * 🎯 SECURITY HEADERS
- * Set security headers untuk prevent common attacks
- */
-function set_security_headers() {
-    // Prevent clickjacking
-    header('X-Frame-Options: SAMEORIGIN');
-    
-    // Prevent MIME type sniffing
-    header('X-Content-Type-Options: nosniff');
-    
-    // Enable XSS protection
-    header('X-XSS-Protection: 1; mode=block');
-    
-    // Content Security Policy
-    header('Content-Security-Policy: default-src \'self\'; script-src \'self\' \'unsafe-inline\' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; style-src \'self\' \'unsafe-inline\' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; img-src \'self\' data: https:;');
-}
-
-// Jalankan security headers
-set_security_headers();
-
 ?>
