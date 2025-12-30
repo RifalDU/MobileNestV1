@@ -1,8 +1,15 @@
 <?php
-// ❌ REMOVED: session_start() - Sudah di-handle oleh config.php
-// Config.php sudah melakukan session_start(), jadi tidak perlu lagi di sini
+require_once '../config.php';
 
-require_once '../config.php';  // ✅ FIXED: Correct path to config.php
+$page_title = "Login";
+$css_path = "../assets/css/style.css";
+$js_path = "../assets/js/script.js";
+$logo_path = "../assets/images/logo.jpg";
+$home_url = "../index.php";
+$produk_url = "../produk/list-produk.php";
+$login_url = "login.php";
+$register_url = "register.php";
+$keranjang_url = "../transaksi/keranjang.php";
 
 // Redirect jika sudah login
 if (isset($_SESSION['user']) || isset($_SESSION['admin'])) {
@@ -26,9 +33,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['login'])) {
     
     // ✅ VALIDASI INPUT
     if (empty($username) || empty($password)) {
-        $error = '❌ Username dan password tidak boleh kosong!';
+        $error = 'Username dan password tidak boleh kosong!';
     } else {
-        // 1️⃣ QUERY TABEL USERS
+        // 1️⃣ QUERY TABEL USERS (Support username OR email)
         $sql = "SELECT * FROM users WHERE username = ? OR email = ?";
         $stmt = $conn->prepare($sql);
         
@@ -45,7 +52,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['login'])) {
                 // 2️⃣ VERIFIKASI PASSWORD
                 if (password_verify($password, $user_data['password'])) {
                     
-                    // 3️⃣ CEK TABEL ADMIN (Optional - skip jika tidak ada tabel admin)
+                    // 3️⃣ CEK TABEL ADMIN (Optional)
                     $is_admin = false;
                     
                     // Check if admin table exists
@@ -83,239 +90,122 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['login'])) {
                         $_SESSION['username'] = $user_data['username'];
                         $_SESSION['role'] = 'user';
                         
-                        // ✅ REDIRECT KE INDEX (Homepage), bukan pesanan
+                        // ✅ REDIRECT KE INDEX (Homepage)
                         header('Location: ' . SITE_URL . '/index.php');
                         exit;
                     }
                 } else {
-                    $error = '❌ Password salah!';
+                    $error = 'Password salah!';
                 }
             } else {
-                $error = '❌ Username tidak ditemukan!';
+                $error = 'Username atau email tidak ditemukan!';
             }
             
             $stmt->close();
         }
     }
 }
+
+include '../includes/header.php';
 ?>
-<!DOCTYPE html>
-<html lang="id">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login - MobileNest</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
 
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            padding: 20px;
-        }
+    <div class="container">
+        <div class="row justify-content-center align-items-center min-vh-100 py-5">
+            <div class="col-12 col-sm-10 col-md-8 col-lg-5">
+                <div class="card shadow border-0 rounded-lg">
+                    <div class="card-body p-4 p-sm-5">
+                        <!-- Logo & Title -->
+                        <div class="text-center mb-4">
+                            <img src="<?php echo $logo_path; ?>" alt="MobileNest Logo" height="50" class="mb-3">
+                            <h3 class="fw-bold text-primary">MobileNest</h3>
+                            <p class="text-muted">Silakan login ke akun Anda</p>
+                        </div>
 
-        .login-container {
-            background: white;
-            border-radius: 15px;
-            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
-            width: 100%;
-            max-width: 420px;
-            padding: 40px;
-            animation: fadeIn 0.5s ease-in;
-        }
+                        <!-- Error Alert -->
+                        <?php if (!empty($error)): ?>
+                            <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                                <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                                <?php echo htmlspecialchars($error); ?>
+                                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                            </div>
+                        <?php endif; ?>
 
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(-20px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
+                        <!-- Success Alert -->
+                        <?php if (!empty($success)): ?>
+                            <div class="alert alert-success alert-dismissible fade show" role="alert">
+                                <i class="bi bi-check-circle-fill me-2"></i>
+                                <?php echo htmlspecialchars($success); ?>
+                                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                            </div>
+                        <?php endif; ?>
 
-        .login-header {
-            text-align: center;
-            margin-bottom: 30px;
-        }
+                        <!-- Login Form -->
+                        <form action="" method="POST">
+                            <div class="mb-3">
+                                <label for="username" class="form-label fw-bold">
+                                    <i class="bi bi-person-fill text-primary"></i> Username atau Email
+                                </label>
+                                <input 
+                                    type="text" 
+                                    class="form-control" 
+                                    id="username" 
+                                    name="username" 
+                                    placeholder="Masukkan username atau email" 
+                                    required
+                                    autocomplete="username"
+                                    value="<?php echo isset($_POST['username']) ? htmlspecialchars($_POST['username']) : ''; ?>"
+                                >
+                            </div>
 
-        .login-header h1 {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-            font-size: 32px;
-            margin-bottom: 10px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 10px;
-        }
+                            <div class="mb-3">
+                                <label for="password" class="form-label fw-bold">
+                                    <i class="bi bi-lock-fill text-primary"></i> Password
+                                </label>
+                                <input 
+                                    type="password" 
+                                    class="form-control" 
+                                    id="password" 
+                                    name="password" 
+                                    placeholder="Masukkan password" 
+                                    required
+                                    autocomplete="current-password"
+                                >
+                            </div>
 
-        .login-header p {
-            color: #666;
-            font-size: 14px;
-        }
+                            <div class="mb-3 form-check">
+                                <input type="checkbox" class="form-check-input" id="remember">
+                                <label class="form-check-label" for="remember">
+                                    Ingat saya
+                                </label>
+                            </div>
 
-        .form-group {
-            margin-bottom: 20px;
-        }
+                            <button type="submit" name="login" class="btn btn-primary btn-lg w-100 mb-3">
+                                <i class="bi bi-box-arrow-in-right"></i> Masuk
+                            </button>
+                        </form>
 
-        .form-group label {
-            display: block;
-            margin-bottom: 8px;
-            color: #333;
-            font-weight: 500;
-            font-size: 14px;
-        }
+                        <!-- Divider -->
+                        <div class="my-4 text-center">
+                            <small class="text-muted">atau</small>
+                        </div>
 
-        .form-group input {
-            width: 100%;
-            padding: 12px 15px;
-            border: 2px solid #e0e0e0;
-            border-radius: 8px;
-            font-size: 14px;
-            transition: all 0.3s;
-        }
+                        <!-- Register Link -->
+                        <div class="text-center">
+                            <p class="mb-0">Belum punya akun? 
+                                <a href="register.php" class="text-decoration-none fw-bold">Daftar di sini</a>
+                            </p>
+                        </div>
 
-        .form-group input:focus {
-            outline: none;
-            border-color: #667eea;
-            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
-        }
-
-        .alert {
-            padding: 12px 15px;
-            border-radius: 8px;
-            margin-bottom: 20px;
-            font-size: 14px;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        .alert-danger {
-            background-color: #fee;
-            color: #c33;
-            border: 1px solid #fcc;
-        }
-
-        .btn-login {
-            width: 100%;
-            padding: 14px;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            border: none;
-            border-radius: 8px;
-            font-size: 16px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: transform 0.2s, box-shadow 0.2s;
-        }
-
-        .btn-login:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 5px 20px rgba(102, 126, 234, 0.4);
-        }
-
-        .btn-login:active {
-            transform: translateY(0);
-        }
-
-        .login-footer {
-            text-align: center;
-            margin-top: 25px;
-            font-size: 14px;
-            color: #666;
-        }
-
-        .login-footer a {
-            color: #667eea;
-            text-decoration: none;
-            font-weight: 600;
-        }
-
-        .login-footer a:hover {
-            text-decoration: underline;
-        }
-        
-        .btn-home {
-            display: block;
-            text-align: center;
-            margin-top: 15px;
-            text-decoration: none;
-            color: #666;
-            font-size: 14px;
-            transition: color 0.3s;
-        }
-        
-        .btn-home:hover {
-            color: #667eea;
-        }
-    </style>
-</head>
-<body>
-    <div class="login-container">
-        <div class="login-header">
-            <h1>
-                <i class="fas fa-mobile-alt"></i>
-                MobileNest
-            </h1>
-            <p>Silakan Login ke Akun Anda</p>
+                        <!-- Forgot Password -->
+                        <div class="text-center mt-3">
+                            <a href="#" class="text-muted text-decoration-none small">
+                                <i class="bi bi-question-circle"></i> Lupa password?
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
-
-        <?php if (!empty($error)): ?>
-            <div class="alert alert-danger">
-                <i class="fas fa-exclamation-circle"></i>
-                <?php echo htmlspecialchars($error); ?>
-            </div>
-        <?php endif; ?>
-
-        <form method="POST" action="" class="login-form">
-            <div class="form-group">
-                <label for="username">
-                    <i class="fas fa-user"></i>
-                    Username atau Email
-                </label>
-                <input 
-                    type="text" 
-                    id="username" 
-                    name="username" 
-                    placeholder="Masukkan username atau email" 
-                    required
-                    autocomplete="username"
-                    value="<?php echo isset($_POST['username']) ? htmlspecialchars($_POST['username']) : ''; ?>"
-                >
-            </div>
-
-            <div class="form-group">
-                <label for="password">
-                    <i class="fas fa-lock"></i>
-                    Password
-                </label>
-                <input 
-                    type="password" 
-                    id="password" 
-                    name="password" 
-                    placeholder="Masukkan password" 
-                    required
-                    autocomplete="current-password"
-                >
-            </div>
-
-            <button type="submit" name="login" class="btn-login">
-                <i class="fas fa-sign-in-alt"></i>
-                Masuk
-            </button>
-        </form>
-
-        <div class="login-footer">
-            Belum punya akun? <a href="register.php">Daftar sekarang</a>
-        </div>
-        
-        <a href="<?php echo SITE_URL; ?>/index.php" class="btn-home">
-            <i class="fas fa-arrow-left"></i> Kembali ke Beranda
-        </a>
     </div>
-</body>
-</html>
+
+<?php include '../includes/footer.php'; ?>
