@@ -21,13 +21,23 @@ require_once dirname(__DIR__) . '/config.php';
     <link rel="stylesheet" href="<?php echo SITE_URL; ?>/assets/css/style.css?v=<?php echo time(); ?>">
     
     <link rel="shortcut icon" href="<?php echo SITE_URL; ?>/assets/images/logo.jpg" type="image/x-icon">
+    
+    <style>
+        /* Remove white background box from logo */
+        .navbar-brand img {
+            background: transparent !important;
+            border: none !important;
+            box-shadow: none !important;
+            object-fit: contain;
+        }
+    </style>
 </head>
 <body>
     
     <nav class="navbar navbar-expand-lg navbar-light bg-white shadow-sm sticky-top">
         <div class="container">
             <a class="navbar-brand fw-bold d-flex align-items-center" href="<?php echo SITE_URL; ?>/index.php">
-                <img src="<?php echo SITE_URL; ?>/assets/images/logo.jpg" alt="Logo" height="40" class="me-2 rounded">
+                <img src="<?php echo SITE_URL; ?>/assets/images/logo.jpg" alt="Logo" height="40" class="me-2">
                 <span class="text-primary">MobileNest</span>
             </a>
             
