@@ -1,9 +1,8 @@
 <?php
-session_start();
+// ❌ REMOVED: session_start() - Sudah di-handle oleh config.php
+// Config.php sudah melakukan session_start(), jadi tidak perlu lagi di sini
 
-// ✅ PERBAIKAN PATH CONFIG (Mundur satu folder ke root)
-// Ini solusi untuk error "Failed to open stream"
-require_once dirname(__DIR__) . '/config.php';
+require_once '../config.php';  // ✅ FIXED: Correct path to config.php
 
 // Redirect jika sudah login
 if (isset($_SESSION['user']) || isset($_SESSION['admin'])) {
@@ -30,13 +29,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['login'])) {
         $error = '❌ Username dan password tidak boleh kosong!';
     } else {
         // 1️⃣ QUERY TABEL USERS
-        $sql = "SELECT * FROM users WHERE username = ?";
+        $sql = "SELECT * FROM users WHERE username = ? OR email = ?";
         $stmt = $conn->prepare($sql);
         
         if (!$stmt) {
             $error = 'Database error: ' . $conn->error;
         } else {
-            $stmt->bind_param('s', $username);
+            $stmt->bind_param('ss', $username, $username);
             $stmt->execute();
             $result = $stmt->get_result();
             
@@ -46,42 +45,47 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['login'])) {
                 // 2️⃣ VERIFIKASI PASSWORD
                 if (password_verify($password, $user_data['password'])) {
                     
-                    // 3️⃣ CEK TABEL ADMIN
-                    $admin_check_sql = "SELECT id_admin FROM admin WHERE id_user = ?";
-                    $admin_stmt = $conn->prepare($admin_check_sql);
+                    // 3️⃣ CEK TABEL ADMIN (Optional - skip jika tidak ada tabel admin)
+                    $is_admin = false;
                     
-                    if (!$admin_stmt) {
-                        $error = 'Database error: ' . $conn->error;
-                    } else {
-                        $admin_stmt->bind_param('i', $user_data['id_user']);
-                        $admin_stmt->execute();
-                        $admin_result = $admin_stmt->get_result();
+                    // Check if admin table exists
+                    $table_check = $conn->query("SHOW TABLES LIKE 'admin'");
+                    if ($table_check && $table_check->num_rows > 0) {
+                        $admin_check_sql = "SELECT id_admin FROM admin WHERE id_user = ?";
+                        $admin_stmt = $conn->prepare($admin_check_sql);
                         
-                        if ($admin_result->num_rows > 0) {
-                            // ✅ LOGIN AS ADMIN
-                            $_SESSION['admin'] = $user_data['id_user'];
-                            $_SESSION['admin_name'] = $user_data['username'];
-                            $_SESSION['admin_email'] = $user_data['email'];
+                        if ($admin_stmt) {
+                            $admin_stmt->bind_param('i', $user_data['id_user']);
+                            $admin_stmt->execute();
+                            $admin_result = $admin_stmt->get_result();
                             
-                            // Log activity (Opsional)
-                            // ... kode log activity ...
-                            
-                            header('Location: ' . SITE_URL . '/admin/dashboard.php');
-                            exit;
-                        } else {
-                            // ✅ LOGIN AS USER
-                            $_SESSION['user'] = $user_data['id_user'];
-                            $_SESSION['user_name'] = $user_data['username'];
-                            $_SESSION['user_email'] = $user_data['email'];
-                            
-                            // Log activity (Opsional)
-                            // ... kode log activity ...
-                            
-                            header('Location: ' . SITE_URL . '/user/pesanan.php');
-                            exit;
+                            if ($admin_result->num_rows > 0) {
+                                $is_admin = true;
+                            }
+                            $admin_stmt->close();
                         }
+                    }
+                    
+                    if ($is_admin) {
+                        // ✅ LOGIN AS ADMIN
+                        $_SESSION['admin'] = $user_data['id_user'];
+                        $_SESSION['admin_name'] = $user_data['nama_lengkap'] ?? $user_data['username'];
+                        $_SESSION['admin_email'] = $user_data['email'];
+                        $_SESSION['admin_username'] = $user_data['username'];
                         
-                        $admin_stmt->close();
+                        header('Location: ' . SITE_URL . '/admin/dashboard.php');
+                        exit;
+                    } else {
+                        // ✅ LOGIN AS USER
+                        $_SESSION['user'] = $user_data['id_user'];
+                        $_SESSION['user_name'] = $user_data['nama_lengkap'] ?? $user_data['username'];
+                        $_SESSION['user_email'] = $user_data['email'];
+                        $_SESSION['username'] = $user_data['username'];
+                        $_SESSION['role'] = 'user';
+                        
+                        // ✅ REDIRECT KE INDEX (Homepage), bukan pesanan
+                        header('Location: ' . SITE_URL . '/index.php');
+                        exit;
                     }
                 } else {
                     $error = '❌ Password salah!';
@@ -107,9 +111,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['login'])) {
 
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            /* ✅ UBAH BACKGROUND JADI BIRU (Sesuai Request) */
-            /* Menggunakan warna Bootstrap Primary Blue (#0d6efd) dengan sedikit gradient */
-            background: linear-gradient(135deg, #0d6efd 0%, #0a58ca 100%);
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             min-height: 100vh;
             display: flex;
             justify-content: center;
@@ -119,11 +121,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['login'])) {
 
         .login-container {
             background: white;
-            border-radius: 10px;
+            border-radius: 15px;
             box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
             width: 100%;
-            max-width: 400px;
+            max-width: 420px;
             padding: 40px;
+            animation: fadeIn 0.5s ease-in;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-20px); }
+            to { opacity: 1; transform: translateY(0); }
         }
 
         .login-header {
@@ -132,8 +140,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['login'])) {
         }
 
         .login-header h1 {
-            color: #0d6efd; /* Ubah warna teks jadi biru juga */
-            font-size: 28px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            font-size: 32px;
             margin-bottom: 10px;
             display: flex;
             align-items: center;
@@ -160,59 +171,66 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['login'])) {
 
         .form-group input {
             width: 100%;
-            padding: 12px;
-            border: 1px solid #ddd;
-            border-radius: 5px;
+            padding: 12px 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
             font-size: 14px;
-            transition: border-color 0.3s;
+            transition: all 0.3s;
         }
 
         .form-group input:focus {
             outline: none;
-            border-color: #0d6efd; /* Fokus warna biru */
-            box-shadow: 0 0 5px rgba(13, 110, 253, 0.2);
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
         }
 
         .alert {
-            padding: 12px;
-            border-radius: 5px;
+            padding: 12px 15px;
+            border-radius: 8px;
             margin-bottom: 20px;
             font-size: 14px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
         }
 
         .alert-danger {
-            background-color: #f8d7da;
-            color: #721c24;
-            border: 1px solid #f5c6cb;
+            background-color: #fee;
+            color: #c33;
+            border: 1px solid #fcc;
         }
 
         .btn-login {
             width: 100%;
-            padding: 12px;
-            /* Tombol Biru Solid */
-            background: #0d6efd;
+            padding: 14px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
             border: none;
-            border-radius: 5px;
+            border-radius: 8px;
             font-size: 16px;
             font-weight: 600;
             cursor: pointer;
-            transition: background 0.2s;
+            transition: transform 0.2s, box-shadow 0.2s;
         }
 
         .btn-login:hover {
-            background: #0b5ed7; /* Biru lebih gelap saat hover */
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-login:active {
+            transform: translateY(0);
         }
 
         .login-footer {
             text-align: center;
-            margin-top: 20px;
+            margin-top: 25px;
             font-size: 14px;
             color: #666;
         }
 
         .login-footer a {
-            color: #0d6efd;
+            color: #667eea;
             text-decoration: none;
             font-weight: 600;
         }
@@ -228,10 +246,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['login'])) {
             text-decoration: none;
             color: #666;
             font-size: 14px;
+            transition: color 0.3s;
         }
+        
         .btn-home:hover {
-            color: #0d6efd;
-            text-decoration: underline;
+            color: #667eea;
         }
     </style>
 </head>
@@ -256,15 +275,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['login'])) {
             <div class="form-group">
                 <label for="username">
                     <i class="fas fa-user"></i>
-                    Username
+                    Username atau Email
                 </label>
                 <input 
                     type="text" 
                     id="username" 
                     name="username" 
-                    placeholder="Masukkan username" 
+                    placeholder="Masukkan username atau email" 
                     required
                     autocomplete="username"
+                    value="<?php echo isset($_POST['username']) ? htmlspecialchars($_POST['username']) : ''; ?>"
                 >
             </div>
 
