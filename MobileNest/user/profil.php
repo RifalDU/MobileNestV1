@@ -1,10 +1,15 @@
 <?php
+// CRITICAL: Load config.php FIRST (contains SITE_URL and session_start)
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
+
+// Load config first before auth-check
+require_once '../config.php';
+
+// Now load auth-check (which might use SITE_URL from config)
 require_once '../includes/auth-check.php';
 require_user_login();
-require_once '../config.php';
 
 $user_id = $_SESSION['user'];
 $user_data = [];
@@ -55,6 +60,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $user_data['email'] = $email;
                     $user_data['no_telepon'] = $telepon;
                     $user_data['alamat'] = $alamat;
+                    
+                    // Update session juga
+                    $_SESSION['user_name'] = $nama;
+                    $_SESSION['user_email'] = $email;
                 } else {
                     $errors[] = 'Error: ' . $update_stmt->error;
                 }
@@ -339,6 +348,30 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             font-size: 14px;
         }
 
+        /* Back Button */
+        .back-button {
+            margin-bottom: 20px;
+        }
+
+        .back-button a {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: white;
+            color: var(--primary);
+            text-decoration: none;
+            padding: 10px 20px;
+            border-radius: 12px;
+            font-weight: 600;
+            box-shadow: var(--card-shadow);
+            transition: var(--transition);
+        }
+
+        .back-button a:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(0, 123, 255, 0.3);
+        }
+
         /* Responsive */
         @media (max-width: 768px) {
             .profile-container {
@@ -377,31 +410,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 opacity: 1;
             }
         }
-
-        /* Icon styling */
-        .icon-field {
-            position: relative;
-        }
-
-        .icon-field i {
-            position: absolute;
-            left: 16px;
-            top: 50%;
-            transform: translateY(-50%);
-            color: var(--secondary);
-            font-size: 18px;
-        }
-
-        .icon-field .form-control {
-            padding-left: 45px;
-        }
     </style>
 </head>
 <body>
-    <?php include '../header.php'; ?>
 
     <div class="profile-container">
         <div class="container">
+            <!-- Back Button -->
+            <div class="back-button">
+                <a href="<?php echo SITE_URL; ?>/index.php">
+                    <i class="fas fa-arrow-left"></i> Kembali ke Beranda
+                </a>
+            </div>
+
             <!-- Profile Header -->
             <div class="profile-header">
                 <div class="avatar">
@@ -523,8 +544,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             </div>
         </div>
     </div>
-
-    <?php include '../footer.php'; ?>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
