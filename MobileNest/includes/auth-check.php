@@ -1,11 +1,11 @@
 <?php
-// ULTRA MINIMAL AUTH-CHECK - NO FANCY FEATURES
+// ULTRA MINIMAL AUTH-CHECK
 
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 
-// BASIC FUNCTION ONLY
+// BASIC FUNCTIONS
 function require_user_login() {
     if (!isset($_SESSION['user'])) {
         header('Location: ' . SITE_URL . '/user/login.php');
@@ -26,6 +26,11 @@ function is_user_logged_in() {
 
 function is_admin_logged_in() {
     return isset($_SESSION['admin']);
+}
+
+// Alias for header.php compatibility
+function is_logged_in() {
+    return isset($_SESSION['user']) || isset($_SESSION['admin']);
 }
 
 function get_user_id() {
