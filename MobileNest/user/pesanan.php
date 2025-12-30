@@ -5,7 +5,6 @@ require_once '../includes/auth-check.php';
 require_user_login();
 
 $page_title = "Riwayat Pesanan";
-include '../includes/header.php';
 
 $user_id = $_SESSION['user'];
 
@@ -24,9 +23,12 @@ $stmt->execute();
 $result = $stmt->get_result();
 $orders = $result->fetch_all(MYSQLI_ASSOC);
 $stmt->close();
+
+include '../includes/header.php';
 ?>
 
 <style>
+body { background: #f5f7fa; }
 .orders-container {
     max-width: 1000px;
     margin: 0 auto;
@@ -34,6 +36,9 @@ $stmt->close();
 .empty-state {
     text-align: center;
     padding: 80px 20px;
+    background: white;
+    border-radius: 15px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.05);
 }
 .empty-state-icon {
     font-size: 120px;
@@ -65,6 +70,8 @@ $stmt->close();
     padding-bottom: 15px;
     border-bottom: 2px solid #f0f0f0;
     margin-bottom: 15px;
+    flex-wrap: wrap;
+    gap: 10px;
 }
 .order-id {
     font-weight: 700;
@@ -114,6 +121,7 @@ $stmt->close();
     margin-top: 15px;
     display: flex;
     gap: 10px;
+    flex-wrap: wrap;
 }
 .btn-detail {
     padding: 10px 20px;
@@ -124,6 +132,7 @@ $stmt->close();
     font-weight: 600;
     text-decoration: none;
     display: inline-block;
+    transition: all 0.3s;
 }
 .btn-detail:hover {
     color: white;
@@ -139,6 +148,11 @@ $stmt->close();
     font-weight: 600;
     text-decoration: none;
     display: inline-block;
+    transition: all 0.3s;
+}
+.btn-outline:hover {
+    background: #667eea;
+    color: white;
 }
 .filter-tabs {
     display: flex;
