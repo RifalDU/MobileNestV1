@@ -211,7 +211,7 @@ if ($user_role !== 'admin') {
         <div class="user-info">
             <span class="badge-admin">👤 ADMIN</span>
             <span><?= htmlspecialchars($nama_lengkap) ?></span>
-            <a href="../api/auth/logout.php" class="btn-logout">🚪 Logout</a>
+            <a href="../includes/logout.php" class="btn-logout">🚪 Logout</a>
         </div>
     </div>
     
