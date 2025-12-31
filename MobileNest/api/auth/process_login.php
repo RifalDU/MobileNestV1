@@ -3,6 +3,10 @@
  * Login Process Handler
  * Authenticates user against admin and users tables
  * 
+ * Redirect Logic:
+ * - Admin login → /MobileNest/admin/dashboard.php
+ * - User login → /MobileNest/index.php (home/belanja)
+ * 
  * Flow:
  * 1. Check admin table first
  * 2. If not found, check users table
@@ -62,6 +66,7 @@ if ($result->num_rows > 0) {
         $_SESSION['login_time'] = time();
         
         $stmt->close();
+        // Admin redirect to admin dashboard
         header('Location: ../../admin/dashboard.php');
         exit();
     }
@@ -78,6 +83,7 @@ if ($result->num_rows > 0) {
         $_SESSION['login_time'] = time();
         
         $stmt->close();
+        // Admin redirect to admin dashboard
         header('Location: ../../admin/dashboard.php');
         exit();
     }
@@ -126,7 +132,8 @@ if ($result->num_rows > 0) {
         $_SESSION['login_time'] = time();
         
         $stmt->close();
-        header('Location: ../../user/dashboard.php');
+        // User redirect to home/index.php (belanja)
+        header('Location: ../../index.php');
         exit();
     }
     
@@ -142,7 +149,8 @@ if ($result->num_rows > 0) {
         $_SESSION['login_time'] = time();
         
         $stmt->close();
-        header('Location: ../../user/dashboard.php');
+        // User redirect to home/index.php (belanja)
+        header('Location: ../../index.php');
         exit();
     }
     
