@@ -3,6 +3,10 @@
  * MobileNest Login Page
  * Unified login for both Admin and Users
  * 
+ * Redirect Logic:
+ * - Admin → /MobileNest/admin/dashboard.php
+ * - User → /MobileNest/index.php (home/belanja)
+ * 
  * Test Credentials:
  * Admin: username=admin, password=password123
  * User: username=user1, password=pass1
@@ -15,7 +19,8 @@ if (isset($_SESSION['authenticated']) && $_SESSION['authenticated'] === true) {
     if ($_SESSION['role'] === 'admin') {
         header('Location: admin/dashboard.php');
     } else {
-        header('Location: user/dashboard.php');
+        // User login → redirect to home/index
+        header('Location: index.php');
     }
     exit();
 }
@@ -266,7 +271,7 @@ $logged_out = isset($_GET['logged_out']);
         
         <!-- Footer -->
         <div class="login-footer">
-            <p>Sistem akan otomatis mengarahkan ke dashboard yang tepat</p>
+            <p>Admin → Dashboard | User → Home/Belanja</p>
         </div>
         
         <!-- Demo Credentials -->
@@ -277,14 +282,16 @@ $logged_out = isset($_GET['logged_out']);
                 <span class="badge">ADMIN</span>
                 <strong>Admin Account</strong><br>
                 Username: <code>admin</code><br>
-                Password: <code>password123</code>
+                Password: <code>password123</code><br>
+                <span style="color: #999; font-size: 11px;">→ Ke Admin Dashboard</span>
             </div>
             
             <div class="demo-item">
                 <span class="badge user">USER</span>
                 <strong>Customer Account</strong><br>
                 Username: <code>user1</code><br>
-                Password: <code>pass1</code>
+                Password: <code>pass1</code><br>
+                <span style="color: #999; font-size: 11px;">→ Ke Home/Belanja</span>
             </div>
         </div>
     </div>
