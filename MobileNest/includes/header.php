@@ -1,5 +1,7 @@
 <?php
 // FILE: includes/header.php
+// Navigation & header template untuk seluruh aplikasi
+
 // 1. Cek Session
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
@@ -8,8 +10,8 @@ if (session_status() === PHP_SESSION_NONE) {
 // 2. Panggil Config (Wajib ada biar SITE_URL jalan)
 require_once dirname(__DIR__) . '/config.php';
 
-// 3. Panggil Helper Functions (untuk is_logged_in() dll)
-require_once dirname(__DIR__) . '/includes/helpers.php';
+// 3. Panggil Helper Functions (dari folder yang sama)
+require_once __DIR__ . '/helpers.php';
 ?>
 <!DOCTYPE html>
 <html lang="id">
