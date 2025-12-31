@@ -1,7 +1,7 @@
 <?php
 /**
  * Brand Logo Configuration
- * Uses Simpleicons CDN + reliable fallback sources for brand logos
+ * Uses high-quality, reliable CDN sources for brand logos
  */
 
 $brand_logos = [
@@ -26,11 +26,10 @@ $brand_logos = [
         'alt' => 'Vivo Logo'
     ],
     'Realme' => [
-        // Using high-quality PNG from direct source
-        'image_url' => 'https://images.ctfassets.net/o5ufnw1d8q78/1zZn5HhYL9qHVjKCFGjBVp/ae6ffa5a3fb7338c900c58ac89c6b90a/Realme-Logo.png',
+        // Use Direct PNG from reliable source - Realme's official CDN
+        'image_url' => 'https://static.realme.com/realme_com/_next/static/image/public/images/logo.8b4c0f17.png',
         'alt' => 'Realme Logo',
         'fallback_urls' => [
-            'https://cdn.discordapp.com/attachments/809124708424106004/1038847369886789662/Realme_Logo.png',
             'https://cdn.jsdelivr.net/npm/simple-icons@latest/icons/smartphone.svg'
         ]
     ]
@@ -76,15 +75,16 @@ function get_brand_logo_html($brand_name, $attributes = []) {
     foreach ($fallback_urls as $url) {
         $onerror_parts[] = "this.src='" . htmlspecialchars($url) . "'";
     }
-    $onerror = implode(';', $onerror_parts) . ";this.style.display='none';";
+    $onerror = implode(';', $onerror_parts) . ";if(this.src===this.dataset.lastSrc)this.style.display='none';";
     
     return sprintf(
-        '<img src="%s" alt="%s" class="%s" style="%s" loading="lazy" onerror="%s">',
+        '<img src="%s" alt="%s" class="%s" style="%s" loading="lazy" onerror="%s" data-last-src="%s">',
         htmlspecialchars($logo_url),
         htmlspecialchars($alt_text),
         htmlspecialchars($class),
         htmlspecialchars($style),
-        $onerror
+        $onerror,
+        htmlspecialchars(end($fallback_urls) ?: $logo_url)
     );
 }
 
