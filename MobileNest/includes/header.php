@@ -4,8 +4,12 @@
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
+
 // 2. Panggil Config (Wajib ada biar SITE_URL jalan)
 require_once dirname(__DIR__) . '/config.php';
+
+// 3. Panggil Helper Functions (untuk is_logged_in() dll)
+require_once dirname(__DIR__) . '/includes/helpers.php';
 ?>
 <!DOCTYPE html>
 <html lang="id">
@@ -53,18 +57,18 @@ require_once dirname(__DIR__) . '/config.php';
                     <?php if (is_logged_in()): ?>
                         <li class="nav-item dropdown">
                             <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
-                                <i class="bi bi-person-circle"></i> <?php echo htmlspecialchars($_SESSION['user_name'] ?? 'Akun'); ?>
+                                <i class="bi bi-person-circle"></i> <?php echo get_user_name(); ?>
                             </a>
                             <ul class="dropdown-menu dropdown-menu-end shadow-sm">
-                                <li><a class="dropdown-item" href="<?php echo SITE_URL; ?>/user/profil.php">Profil</a></li>
-                                <li><a class="dropdown-item" href="<?php echo SITE_URL; ?>/user/pesanan.php">Pesanan</a></li>
+                                <li><a class="dropdown-item" href="<?php echo SITE_URL; ?>/user/profil.php">👤 Profil</a></li>
+                                <li><a class="dropdown-item" href="<?php echo SITE_URL; ?>/user/pesanan.php">📦 Pesanan</a></li>
                                 <li><hr class="dropdown-divider"></li>
-                                <li><a class="dropdown-item text-danger" href="<?php echo SITE_URL; ?>/user/logout.php">Logout</a></li>
+                                <li><a class="dropdown-item text-danger" href="<?php echo SITE_URL; ?>/includes/logout.php">🚪 Logout</a></li>
                             </ul>
                         </li>
                     <?php else: ?>
-                        <li class="nav-item"><a class="nav-link" href="<?php echo SITE_URL; ?>/user/login.php">Masuk</a></li>
-                        <li class="nav-item"><a class="nav-link btn btn-primary text-white ms-2 px-3" href="<?php echo SITE_URL; ?>/user/register.php">Daftar</a></li>
+                        <li class="nav-item"><a class="nav-link" href="<?php echo SITE_URL; ?>/login.php">🔐 Masuk</a></li>
+                        <li class="nav-item"><a class="nav-link btn btn-primary text-white ms-2 px-3" href="<?php echo SITE_URL; ?>/user/register.php">✍️ Daftar</a></li>
                     <?php endif; ?>
 
                     <li class="nav-item ms-lg-2">
