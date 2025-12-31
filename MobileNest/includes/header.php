@@ -67,7 +67,7 @@ require_once dirname(__DIR__) . '/includes/helpers.php';
                             </ul>
                         </li>
                     <?php else: ?>
-                        <li class="nav-item"><a class="nav-link" href="<?php echo SITE_URL; ?>/login.php">🔐 Masuk</a></li>
+                        <li class="nav-item"><a class="nav-link" href="<?php echo SITE_URL; ?>/user/login.php">🔐 Masuk</a></li>
                         <li class="nav-item"><a class="nav-link btn btn-primary text-white ms-2 px-3" href="<?php echo SITE_URL; ?>/user/register.php">✍️ Daftar</a></li>
                     <?php endif; ?>
 
