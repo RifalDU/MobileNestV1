@@ -1,4 +1,7 @@
 <?php
+error_reporting(E_ALL);
+ini_set('display_errors', 1);
+
 if (session_status() === PHP_SESSION_NONE) session_start();
 require_once '../config.php';
 require_once '../includes/auth-check.php';
@@ -7,22 +10,33 @@ require_user_login();
 $page_title = "Riwayat Pesanan";
 
 $user_id = $_SESSION['user'];
+$orders = [];
 
-// Query untuk ambil pesanan user
-$sql = "SELECT t.*, 
-        COUNT(dt.id_detail_transaksi) as total_items,
-        SUM(dt.subtotal) as total_amount
-        FROM transaksi t
-        LEFT JOIN detail_transaksi dt ON t.id_transaksi = dt.id_transaksi
-        WHERE t.id_user = ?
-        GROUP BY t.id_transaksi
-        ORDER BY t.tanggal_transaksi DESC";
-$stmt = $conn->prepare($sql);
-$stmt->bind_param('i', $user_id);
-$stmt->execute();
-$result = $stmt->get_result();
-$orders = $result->fetch_all(MYSQLI_ASSOC);
-$stmt->close();
+// Query untuk ambil pesanan user dengan error handling
+try {
+    $sql = "SELECT t.*, 
+            COUNT(dt.id_detail_transaksi) as total_items,
+            COALESCE(SUM(dt.subtotal), 0) as total_amount
+            FROM transaksi t
+            LEFT JOIN detail_transaksi dt ON t.id_transaksi = dt.id_transaksi
+            WHERE t.id_user = ?
+            GROUP BY t.id_transaksi
+            ORDER BY t.tanggal_transaksi DESC";
+    $stmt = $conn->prepare($sql);
+    if (!$stmt) {
+        throw new Exception("Prepare failed: " . $conn->error);
+    }
+    $stmt->bind_param('i', $user_id);
+    if (!$stmt->execute()) {
+        throw new Exception("Execute failed: " . $stmt->error);
+    }
+    $result = $stmt->get_result();
+    $orders = $result->fetch_all(MYSQLI_ASSOC);
+    $stmt->close();
+} catch (Exception $e) {
+    // Log error but continue to show empty state
+    error_log("Pesanan query error: " . $e->getMessage());
+}
 
 include '../includes/header.php';
 ?>
@@ -199,7 +213,7 @@ body { background: #f5f7fa; }
             <?php foreach($orders as $order): 
                 $status_class = 'status-' . strtolower($order['status_transaksi']);
             ?>
-            <div class="order-card" data-status="<?php echo $order['status_transaksi']; ?>">
+            <div class="order-card" data-status="<?php echo htmlspecialchars($order['status_transaksi']); ?>">
                 <div class="order-header">
                     <div>
                         <div class="order-id">
@@ -212,7 +226,7 @@ body { background: #f5f7fa; }
                         </div>
                     </div>
                     <span class="status-badge <?php echo $status_class; ?>">
-                        <?php echo $order['status_transaksi']; ?>
+                        <?php echo htmlspecialchars($order['status_transaksi']); ?>
                     </span>
                 </div>
                 
@@ -223,12 +237,12 @@ body { background: #f5f7fa; }
                     </div>
                     <div class="mb-2">
                         <i class="bi bi-credit-card"></i> 
-                        <strong><?php echo $order['metode_pembayaran']; ?></strong>
+                        <strong><?php echo htmlspecialchars($order['metode_pembayaran']); ?></strong>
                     </div>
                     <?php if(!empty($order['resi_pengiriman'])): ?>
                     <div class="mb-2">
                         <i class="bi bi-truck"></i> 
-                        Resi: <strong><?php echo $order['resi_pengiriman']; ?></strong>
+                        Resi: <strong><?php echo htmlspecialchars($order['resi_pengiriman']); ?></strong>
                     </div>
                     <?php endif; ?>
                 </div>
@@ -258,7 +272,7 @@ body { background: #f5f7fa; }
                 </div>
                 <h3>Belum Ada Pesanan</h3>
                 <p>Anda belum memiliki riwayat pesanan.<br>Yuk, mulai belanja sekarang!</p>
-                <a href="<?php echo SITE_URL; ?>/produk/list-produk.php" class="btn-detail" style="display: inline-block;">
+                <a href="<?php echo SITE_URL; ?>/produk/list-produk.php" class="btn-detail">
                     <i class="bi bi-shop"></i> Mulai Belanja
                 </a>
             </div>
@@ -270,13 +284,11 @@ body { background: #f5f7fa; }
 // Filter functionality
 document.querySelectorAll('.filter-tab').forEach(tab => {
     tab.addEventListener('click', function() {
-        // Update active tab
         document.querySelectorAll('.filter-tab').forEach(t => t.classList.remove('active'));
         this.classList.add('active');
         
         const status = this.dataset.status;
         
-        // Filter orders
         document.querySelectorAll('.order-card').forEach(card => {
             if (status === 'all' || card.dataset.status === status) {
                 card.style.display = 'block';
