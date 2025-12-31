@@ -3,8 +3,8 @@
  * Login Process Handler
  * Authenticates user against admin and users tables
  * 
- * Location: includes/ (not api/) - This is a helper, not an API endpoint
- * 
+ * Location: includes/process_login.php
+ * Form posts from: user/login.php
  * Redirect Logic:
  * - Admin login → /MobileNest/admin/dashboard.php
  * - User login → /MobileNest/index.php (home/belanja)
@@ -18,11 +18,12 @@
  */
 
 session_start();
-require_once 'config.php';
+require_once dirname(__DIR__) . '/config.php';
 
 // Only process POST requests
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-    header('Location: ../login.php');
+    $_SESSION['error'] = 'Metode request tidak diizinkan!';
+    header('Location: ' . SITE_URL . '/user/login.php');
     exit();
 }
 
@@ -33,7 +34,7 @@ $password = trim($_POST['password'] ?? '');
 // Validate input
 if (empty($username) || empty($password)) {
     $_SESSION['error'] = '❌ Username dan password harus diisi!';
-    header('Location: ../login.php');
+    header('Location: ' . SITE_URL . '/user/login.php');
     exit();
 }
 
@@ -41,7 +42,7 @@ if (empty($username) || empty($password)) {
 $stmt = $conn->prepare("SELECT id_admin, username, password, nama_lengkap, email FROM admin WHERE username = ?");
 if (!$stmt) {
     $_SESSION['error'] = '❌ Database error: ' . $conn->error;
-    header('Location: ../login.php');
+    header('Location: ' . SITE_URL . '/user/login.php');
     exit();
 }
 
@@ -64,7 +65,7 @@ if ($result->num_rows > 0) {
         $_SESSION['login_time'] = time();
         
         $stmt->close();
-        header('Location: ../admin/dashboard.php');
+        header('Location: ' . SITE_URL . '/admin/dashboard.php');
         exit();
     }
     
@@ -80,14 +81,14 @@ if ($result->num_rows > 0) {
         $_SESSION['login_time'] = time();
         
         $stmt->close();
-        header('Location: ../admin/dashboard.php');
+        header('Location: ' . SITE_URL . '/admin/dashboard.php');
         exit();
     }
     
     // Password doesn't match
     $_SESSION['error'] = '❌ Username atau password salah!';
     $stmt->close();
-    header('Location: ../login.php');
+    header('Location: ' . SITE_URL . '/user/login.php');
     exit();
 }
 
@@ -97,7 +98,7 @@ $stmt->close();
 $stmt = $conn->prepare("SELECT id_user, username, password, nama_lengkap, email, status_akun FROM users WHERE username = ?");
 if (!$stmt) {
     $_SESSION['error'] = '❌ Database error: ' . $conn->error;
-    header('Location: ../login.php');
+    header('Location: ' . SITE_URL . '/user/login.php');
     exit();
 }
 
@@ -112,7 +113,7 @@ if ($result->num_rows > 0) {
     if ($user['status_akun'] !== 'Aktif') {
         $_SESSION['error'] = '❌ Akun Anda tidak aktif. Hubungi admin untuk mengaktifkan!';
         $stmt->close();
-        header('Location: ../login.php');
+        header('Location: ' . SITE_URL . '/user/login.php');
         exit();
     }
     
@@ -128,7 +129,7 @@ if ($result->num_rows > 0) {
         $_SESSION['login_time'] = time();
         
         $stmt->close();
-        header('Location: ../index.php');
+        header('Location: ' . SITE_URL . '/index.php');
         exit();
     }
     
@@ -144,14 +145,14 @@ if ($result->num_rows > 0) {
         $_SESSION['login_time'] = time();
         
         $stmt->close();
-        header('Location: ../index.php');
+        header('Location: ' . SITE_URL . '/index.php');
         exit();
     }
     
     // Password doesn't match
     $_SESSION['error'] = '❌ Username atau password salah!';
     $stmt->close();
-    header('Location: ../login.php');
+    header('Location: ' . SITE_URL . '/user/login.php');
     exit();
 }
 
@@ -159,7 +160,7 @@ $stmt->close();
 
 // Username not found in both tables
 $_SESSION['error'] = '❌ Username tidak ditemukan!';
-header('Location: ../login.php');
+header('Location: ' . SITE_URL . '/user/login.php');
 exit();
 
 ?>
