@@ -1,5 +1,6 @@
 <?php
 require_once 'config.php';
+require_once 'includes/brand-logos.php';
 $page_title = "Beranda";
 include 'includes/header.php';
 ?>
@@ -33,6 +34,19 @@ include 'includes/header.php';
     color: #2c3e50;
     margin: 10px 0 0 0;
     font-weight: 600;
+}
+.brand-logo-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 60px;
+    margin-bottom: 15px;
+}
+.brand-logo-container img {
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
+    filter: drop-shadow(0 2px 4px rgba(0,0,0,0.1));
 }
 .product-badge {
     position: absolute;
@@ -120,23 +134,23 @@ include 'includes/header.php';
         </div>
         <div class="row g-3">
             <?php
-            $brands = [
-                ['name' => 'Samsung', 'icon' => '📱'],
-                ['name' => 'Xiaomi', 'icon' => '📱'],
-                ['name' => 'iPhone', 'icon' => '📱'],
-                ['name' => 'OPPO', 'icon' => '📱'],
-                ['name' => 'Vivo', 'icon' => '📱'],
-                ['name' => 'Realme', 'icon' => '📱']
-            ];
+            $brands = ['Apple', 'Samsung', 'Xiaomi', 'OPPO', 'Vivo', 'Realme'];
             foreach($brands as $brand):
+                $logo_data = get_brand_logo_data($brand);
+                if ($logo_data):
             ?>
             <div class="col-6 col-md-4 col-lg-2">
-                <a href="<?php echo SITE_URL; ?>/produk/list-produk.php?brand=<?php echo urlencode($brand['name']); ?>" class="category-card">
-                    <div style="font-size: 40px;"><?php echo $brand['icon']; ?></div>
-                    <h5><?php echo $brand['name']; ?></h5>
+                <a href="<?php echo SITE_URL; ?>/produk/list-produk.php?brand=<?php echo urlencode($brand); ?>" class="category-card">
+                    <div class="brand-logo-container">
+                        <img src="<?php echo htmlspecialchars($logo_data['image_url']); ?>" alt="<?php echo htmlspecialchars($logo_data['alt']); ?>" title="<?php echo htmlspecialchars($brand); ?>">
+                    </div>
+                    <h5><?php echo htmlspecialchars($brand); ?></h5>
                 </a>
             </div>
-            <?php endforeach; ?>
+            <?php 
+                endif;
+            endforeach; 
+            ?>
         </div>
     </div>
 </section>
