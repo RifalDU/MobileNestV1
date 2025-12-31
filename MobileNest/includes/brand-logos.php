@@ -9,37 +9,32 @@ $brand_logos = [
     'Apple' => [
         'url' => 'https://cdn.jsdelivr.net/gh/lipis/flag-icons@6.11.0/flags/4x3/us.svg',
         'alt' => 'Apple Logo',
-        'image_url' => 'https://upload.wikimedia.org/wikipedia/commons/f/fa/Apple_logo_black.svg'
-    ],
-    'Xiaomi' => [
-        'url' => 'https://cdn.jsdelivr.net/gh/lipis/flag-icons@6.11.0/flags/4x3/cn.svg',
-        'alt' => 'Xiaomi Logo',
-        'image_url' => 'https://upload.wikimedia.org/wikipedia/commons/thumb/b/b1/Xiaomi_logo.svg/256px-Xiaomi_logo.svg.png'
+        'image_url' => 'https://upload.wikimedia.org/wikipedia/commons/thumb/f/fa/Apple_logo_black.svg/800px-Apple_logo_black.svg.png'
     ],
     'Samsung' => [
         'url' => 'https://cdn.jsdelivr.net/gh/lipis/flag-icons@6.11.0/flags/4x3/kr.svg',
         'alt' => 'Samsung Logo',
-        'image_url' => 'https://upload.wikimedia.org/wikipedia/commons/thumb/2/24/Samsung_Logo.svg/220px-Samsung_Logo.svg.png'
+        'image_url' => 'https://upload.wikimedia.org/wikipedia/commons/thumb/2/24/Samsung_Logo.svg/800px-Samsung_Logo.svg.png'
     ],
-    'Vivo' => [
+    'Xiaomi' => [
         'url' => 'https://cdn.jsdelivr.net/gh/lipis/flag-icons@6.11.0/flags/4x3/cn.svg',
-        'alt' => 'Vivo Logo',
-        'image_url' => 'https://upload.wikimedia.org/wikipedia/commons/thumb/8/80/Vivo_logo.svg/220px-Vivo_logo.svg.png'
-    ],
-    'Realme' => [
-        'url' => 'https://cdn.jsdelivr.net/gh/lipis/flag-icons@6.11.0/flags/4x3/in.svg',
-        'alt' => 'Realme Logo',
-        'image_url' => 'https://upload.wikimedia.org/wikipedia/commons/thumb/4/4d/Realme_logo.svg/220px-Realme_logo.svg.png'
+        'alt' => 'Xiaomi Logo',
+        'image_url' => 'https://upload.wikimedia.org/wikipedia/commons/thumb/b/b1/Xiaomi_logo.svg/800px-Xiaomi_logo.svg.png'
     ],
     'OPPO' => [
         'url' => 'https://cdn.jsdelivr.net/gh/lipis/flag-icons@6.11.0/flags/4x3/cn.svg',
         'alt' => 'OPPO Logo',
-        'image_url' => 'https://upload.wikimedia.org/wikipedia/commons/thumb/f/f6/OPPO_LOGO.svg/220px-OPPO_LOGO.svg.png'
+        'image_url' => 'https://upload.wikimedia.org/wikipedia/commons/thumb/f/f6/OPPO_LOGO.svg/800px-OPPO_LOGO.svg.png'
     ],
-    'iPhone' => [
-        'url' => 'https://cdn.jsdelivr.net/gh/lipis/flag-icons@6.11.0/flags/4x3/us.svg',
-        'alt' => 'iPhone Logo',
-        'image_url' => 'https://upload.wikimedia.org/wikipedia/commons/f/fa/Apple_logo_black.svg'
+    'Vivo' => [
+        'url' => 'https://cdn.jsdelivr.net/gh/lipis/flag-icons@6.11.0/flags/4x3/cn.svg',
+        'alt' => 'Vivo Logo',
+        'image_url' => 'https://upload.wikimedia.org/wikipedia/commons/thumb/8/80/Vivo_logo.svg/800px-Vivo_logo.svg.png'
+    ],
+    'Realme' => [
+        'url' => 'https://cdn.jsdelivr.net/gh/lipis/flag-icons@6.11.0/flags/4x3/in.svg',
+        'alt' => 'Realme Logo',
+        'image_url' => 'https://upload.wikimedia.org/wikipedia/commons/thumb/4/4d/Realme_logo.svg/800px-Realme_logo.svg.png'
     ]
 ];
 
