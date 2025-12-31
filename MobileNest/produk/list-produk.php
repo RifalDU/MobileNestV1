@@ -65,8 +65,7 @@ include '../includes/header.php';
                                     <div style="width: 28px; height: 28px; margin-right: 8px; flex-shrink: 0;">
                                         <img src="<?php echo htmlspecialchars($logo_data['image_url']); ?>" 
                                              alt="<?php echo htmlspecialchars($brand); ?> Logo" 
-                                             style="width: 100%; height: 100%; object-fit: contain;" 
-                                             onerror="this.src='https://via.placeholder.com/28?text=<?php echo urlencode($brand); ?>';" />
+                                             style="width: 100%; height: 100%; object-fit: contain;" />
                                     </div>
                                     <div class="form-check" style="flex-grow: 1;">
                                         <input class="form-check-input brand-checkbox" type="checkbox" 
@@ -155,8 +154,14 @@ include '../includes/header.php';
                     <div class="product-card" data-product-id="<?php echo $produk['id_produk']; ?>">
                         <div class="card border-0 shadow-sm h-100 transition">
                             <!-- Product Image -->
-                            <div class="card-img-top bg-light d-flex align-items-center justify-content-center" style="height: 200px; position: relative;">
-                                <i class="bi bi-phone" style="font-size: 3rem; color: #ccc;"></i>
+                            <div class="card-img-top bg-light d-flex align-items-center justify-content-center" style="height: 200px; position: relative; overflow: hidden;">
+                                <?php if (!empty($produk['gambar'])): ?>
+                                    <img src="<?php echo htmlspecialchars($produk['gambar']); ?>" 
+                                         alt="<?php echo htmlspecialchars($produk['nama_produk']); ?>" 
+                                         style="width: 100%; height: 100%; object-fit: cover;" />
+                                <?php else: ?>
+                                    <i class="bi bi-phone" style="font-size: 3rem; color: #ccc;"></i>
+                                <?php endif; ?>
                                 <span class="badge bg-danger position-absolute top-0 end-0 m-2">-15%</span>
                             </div>
                             
