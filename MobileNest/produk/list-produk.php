@@ -80,7 +80,7 @@ include '../includes/header.php';
                                         <img src="<?php echo htmlspecialchars($logo_data['image_url']); ?>" 
                                              alt="<?php echo htmlspecialchars($brand); ?> Logo" 
                                              style="width: 100%; height: 100%; object-fit: contain;" 
-                                             onerror="this.src='https://via.placeholder.com/28?text=<?php echo $brand; ?>';" />
+                                             onerror="this.src='https://via.placeholder.com/28?text=<?php echo urlencode($brand); ?>';" />
                                     </div>
                                     <div class="form-check" style="flex-grow: 1;">
                                         <input class="form-check-input brand-checkbox" type="checkbox" 
@@ -153,7 +153,7 @@ include '../includes/header.php';
                     </div>
                 </div>
                 
-                <!-- Products Grid -->
+                <!-- Products Grid Container -->
                 <div id="products_container" class="product-grid">
                     <div class="col-12 text-center text-muted py-5">
                         <i class="bi bi-hourglass-split" style="font-size: 2rem;"></i>
@@ -169,6 +169,11 @@ include '../includes/header.php';
 <script>
     // Check if user is logged in (set this from backend if needed)
     var userLoggedIn = <?php echo isset($_SESSION['user']) ? 'true' : 'false'; ?>;
+    
+    // Debug info
+    console.log('list-produk.php loaded');
+    console.log('userLoggedIn:', userLoggedIn);
+    console.log('products_container element:', document.getElementById('products_container'));
 </script>
 <script src="../assets/js/filter.js"></script>
 <script src="../assets/js/cart.js"></script>
