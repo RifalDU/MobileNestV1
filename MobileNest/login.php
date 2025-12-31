@@ -242,7 +242,7 @@ $logged_out = isset($_GET['logged_out']);
         <?php endif; ?>
         
         <!-- Login Form -->
-        <form method="POST" action="api/auth/process_login.php" id="loginForm">
+        <form method="POST" action="includes/process_login.php" id="loginForm">
             <div class="form-group">
                 <label for="username">👤 Username</label>
                 <input 
@@ -266,7 +266,7 @@ $logged_out = isset($_GET['logged_out']);
                 >
             </div>
             
-            <button type="submit" class="btn-login">🔓 Login</button>
+            <button type="submit" class="btn-login">🔑 Login</button>
         </form>
         
         <!-- Footer -->
