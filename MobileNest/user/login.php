@@ -1,106 +1,39 @@
 <?php
-// CRITICAL: Config must be loaded first (handles session_start)
+/**
+ * Login Page (User Area)
+ * Location: /MobileNest/user/login.php
+ * Form Action: /MobileNest/includes/process_login.php
+ * 
+ * Redirect Logic:
+ * - Admin → /MobileNest/admin/dashboard.php
+ * - User → /MobileNest/index.php
+ * 
+ * Test Credentials:
+ * Admin: username=admin, password=password123
+ * User: username=user1, password=pass1
+ */
+
+session_start();
 require_once '../config.php';
 
-// Redirect jika sudah login
-if (isset($_SESSION['user']) || isset($_SESSION['admin'])) {
-    if (isset($_SESSION['admin'])) {
+// If already logged in, redirect to appropriate dashboard
+if (isset($_SESSION['authenticated']) && $_SESSION['authenticated'] === true) {
+    if ($_SESSION['role'] === 'admin') {
         header('Location: ' . SITE_URL . '/admin/dashboard.php');
     } else {
         header('Location: ' . SITE_URL . '/index.php');
     }
-    exit;
+    exit();
 }
 
-$error = '';
-$success = '';
+// Get error/success messages
+$error = $_SESSION['error'] ?? '';
+$success = $_SESSION['success'] ?? '';
+unset($_SESSION['error']);
+unset($_SESSION['success']);
 
-// Check for success message from registration
-if (isset($_SESSION['success'])) {
-    $success = $_SESSION['success'];
-    unset($_SESSION['success']);
-}
+$logged_out = isset($_GET['logged_out']);
 
-/**
- * PROSES LOGIN
- */
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['login'])) {
-    $username = trim($_POST['username'] ?? '');
-    $password = trim($_POST['password'] ?? '');
-    
-    // VALIDASI INPUT
-    if (empty($username) || empty($password)) {
-        $error = 'Username dan password tidak boleh kosong!';
-    } else {
-        // QUERY TABEL USERS (Support username OR email)
-        $sql = "SELECT * FROM users WHERE username = ? OR email = ?";
-        $stmt = $conn->prepare($sql);
-        
-        if (!$stmt) {
-            $error = 'Database error: ' . $conn->error;
-        } else {
-            $stmt->bind_param('ss', $username, $username);
-            $stmt->execute();
-            $result = $stmt->get_result();
-            
-            if ($result->num_rows > 0) {
-                $user_data = $result->fetch_assoc();
-                
-                // VERIFIKASI PASSWORD
-                if (password_verify($password, $user_data['password'])) {
-                    
-                    // CEK TABEL ADMIN (Optional)
-                    $is_admin = false;
-                    
-                    $table_check = $conn->query("SHOW TABLES LIKE 'admin'");
-                    if ($table_check && $table_check->num_rows > 0) {
-                        $admin_check_sql = "SELECT id_admin FROM admin WHERE id_user = ?";
-                        $admin_stmt = $conn->prepare($admin_check_sql);
-                        
-                        if ($admin_stmt) {
-                            $admin_stmt->bind_param('i', $user_data['id_user']);
-                            $admin_stmt->execute();
-                            $admin_result = $admin_stmt->get_result();
-                            
-                            if ($admin_result->num_rows > 0) {
-                                $is_admin = true;
-                            }
-                            $admin_stmt->close();
-                        }
-                    }
-                    
-                    if ($is_admin) {
-                        // LOGIN AS ADMIN
-                        $_SESSION['admin'] = $user_data['id_user'];
-                        $_SESSION['admin_name'] = $user_data['nama_lengkap'] ?? $user_data['username'];
-                        $_SESSION['admin_email'] = $user_data['email'];
-                        $_SESSION['admin_username'] = $user_data['username'];
-                        
-                        header('Location: ' . SITE_URL . '/admin/dashboard.php');
-                        exit;
-                    } else {
-                        // LOGIN AS USER
-                        $_SESSION['user'] = $user_data['id_user'];
-                        $_SESSION['user_name'] = $user_data['nama_lengkap'] ?? $user_data['username'];
-                        $_SESSION['user_email'] = $user_data['email'];
-                        $_SESSION['username'] = $user_data['username'];
-                        $_SESSION['role'] = 'user';
-                        
-                        // REDIRECT KE INDEX (Homepage)
-                        header('Location: ' . SITE_URL . '/index.php');
-                        exit;
-                    }
-                } else {
-                    $error = 'Password salah!';
-                }
-            } else {
-                $error = 'Username atau email tidak ditemukan!';
-            }
-            
-            $stmt->close();
-        }
-    }
-}
 ?>
 <!DOCTYPE html>
 <html lang="id">
@@ -188,11 +121,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['login'])) {
             font-weight: 600;
             border-radius: 8px;
             transition: all 0.3s;
+            color: white;
         }
         
         .btn-login:hover {
             transform: translateY(-2px);
             box-shadow: 0 5px 20px rgba(102, 126, 234, 0.4);
+            color: white;
         }
         
         .divider {
@@ -258,6 +193,37 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['login'])) {
         .alert {
             border-radius: 8px;
         }
+        
+        .demo-info {
+            background: #f0f7ff;
+            border-left: 4px solid #667eea;
+            padding: 15px;
+            border-radius: 6px;
+            margin-top: 20px;
+            font-size: 13px;
+        }
+        
+        .demo-info strong {
+            color: #667eea;
+        }
+        
+        .demo-item {
+            margin: 8px 0;
+            padding: 5px 0;
+            border-bottom: 1px solid rgba(102,126,234,0.2);
+        }
+        
+        .demo-item:last-child {
+            border-bottom: none;
+        }
+        
+        code {
+            background: white;
+            padding: 2px 6px;
+            border-radius: 3px;
+            color: #c33;
+            font-size: 12px;
+        }
     </style>
 </head>
 <body>
@@ -266,17 +232,26 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['login'])) {
     <div class="login-card">
         <!-- Logo & Title -->
         <div class="logo-section">
-            <img src="../assets/images/logo.jpg" alt="MobileNest Logo" onerror="this.style.display='none'">
-            <h2>MobileNest</h2>
+            <img src="<?php echo SITE_URL; ?>/assets/images/logo.jpg" alt="MobileNest Logo">
+            <h2>📱 MobileNest</h2>
             <p>Silakan login ke akun Anda</p>
         </div>
+
+        <!-- Logout Success Alert -->
+        <?php if ($logged_out): ?>
+            <div class="alert alert-success alert-dismissible fade show" role="alert">
+                <i class="bi bi-check-circle-fill me-2"></i>
+                ✓ Anda berhasil logout
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+        <?php endif; ?>
 
         <!-- Error Alert -->
         <?php if (!empty($error)): ?>
             <div class="alert alert-danger alert-dismissible fade show" role="alert">
                 <i class="bi bi-exclamation-triangle-fill me-2"></i>
                 <?php echo htmlspecialchars($error); ?>
-                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
             </div>
         <?php endif; ?>
 
@@ -285,25 +260,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['login'])) {
             <div class="alert alert-success alert-dismissible fade show" role="alert">
                 <i class="bi bi-check-circle-fill me-2"></i>
                 <?php echo htmlspecialchars($success); ?>
-                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
             </div>
         <?php endif; ?>
 
         <!-- Login Form -->
-        <form method="POST" action="">
+        <form method="POST" action="<?php echo SITE_URL; ?>/includes/process_login.php" id="loginForm">
             <div class="mb-3">
                 <label for="username" class="form-label">
-                    <i class="bi bi-person-fill"></i> Username atau Email
+                    <i class="bi bi-person-fill"></i> Username
                 </label>
                 <input 
                     type="text" 
                     class="form-control" 
                     id="username" 
                     name="username" 
-                    placeholder="Masukkan username atau email" 
+                    placeholder="Masukkan username" 
                     required
-                    autocomplete="username"
-                    value="<?php echo isset($_POST['username']) ? htmlspecialchars($_POST['username']) : ''; ?>"
+                    autofocus
                 >
             </div>
 
@@ -318,7 +292,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['login'])) {
                     name="password" 
                     placeholder="Masukkan password" 
                     required
-                    autocomplete="current-password"
                 >
             </div>
 
@@ -329,7 +302,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['login'])) {
                 </label>
             </div>
 
-            <button type="submit" name="login" class="btn btn-primary btn-login w-100 mb-3">
+            <button type="submit" class="btn btn-login w-100 mb-3">
                 <i class="bi bi-box-arrow-in-right"></i> Masuk
             </button>
         </form>
@@ -342,7 +315,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['login'])) {
         <!-- Register Link -->
         <div class="register-link">
             <p class="mb-0">Belum punya akun? 
-                <a href="register.php">Daftar di sini</a>
+                <a href="register.php">퉰dPendaftaran</a>
             </p>
         </div>
 
@@ -355,15 +328,40 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['login'])) {
         
         <!-- Back to Home -->
         <div class="text-center mt-3">
-            <a href="../index.php" class="text-muted">
+            <a href="<?php echo SITE_URL; ?>/index.php" class="text-muted" style="font-size: 14px;">
                 <i class="bi bi-house-door"></i> Kembali ke Beranda
             </a>
+        </div>
+        
+        <!-- Demo Credentials -->
+        <div class="demo-info">
+            <strong>🧪 Test Credentials:</strong>
+            <div class="demo-item">
+                <span class="badge bg-primary">ADMIN</span>
+                <code>admin</code> / <code>password123</code>
+            </div>
+            <div class="demo-item">
+                <span class="badge bg-secondary">USER</span>
+                <code>user1</code> / <code>pass1</code>
+            </div>
         </div>
     </div>
 </div>
 
 <!-- Bootstrap JS -->
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+<script>
+    document.getElementById('loginForm').addEventListener('submit', function(e) {
+        const username = document.getElementById('username').value.trim();
+        const password = document.getElementById('password').value.trim();
+        
+        if (!username || !password) {
+            e.preventDefault();
+            alert('Username dan password tidak boleh kosong!');
+        }
+    });
+</script>
 
 </body>
 </html>
