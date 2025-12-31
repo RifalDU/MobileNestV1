@@ -1,6 +1,7 @@
 <?php
 session_start();
 require_once '../config.php';
+require_once '../includes/brand-logos.php';
 
 // Validasi ID Produk
 if (!isset($_GET['id']) || empty($_GET['id'])) {
@@ -19,6 +20,7 @@ if (mysqli_num_rows($result) == 0) {
 
 $product = mysqli_fetch_assoc($result);
 $page_title = $product['nama_produk'];
+$brand_logo = get_brand_logo_data($product['merek']);
 
 include '../includes/header.php';
 ?>
@@ -30,7 +32,7 @@ include '../includes/header.php';
                 <?php
                     $img_path = "../uploads/" . $product['gambar'];
                     if (!empty($product['gambar']) && file_exists("../uploads/" . $product['gambar'])) {
-                        echo '<img src="'.$img_path.'" class="img-fluid rounded" alt="'.$product['nama_produk'].'">';
+                        echo '<img src="'.$img_path.'" class="img-fluid rounded" alt="'.htmlspecialchars($product['nama_produk']).'">';
                     } else {
                         echo '<div class="card-body text-center bg-light d-flex align-items-center justify-content-center" style="min-height: 400px;">
                                 <i class="bi bi-phone" style="font-size: 5rem; color: #ccc;"></i>
@@ -50,7 +52,21 @@ include '../includes/header.php';
             </nav>
             
             <h1 class="mb-3"><?php echo htmlspecialchars($product['nama_produk']); ?></h1>
-            <p class="text-muted mb-3">Merek: <strong><?php echo htmlspecialchars($product['merek']); ?></strong></p>
+            
+            <!-- Brand dengan Logo -->
+            <div class="d-flex align-items-center gap-3 mb-3">
+                <?php if ($brand_logo): ?>
+                    <div style="width: 40px; height: 40px;">
+                        <img src="<?php echo htmlspecialchars($brand_logo['image_url']); ?>" 
+                             alt="<?php echo htmlspecialchars($brand_logo['alt']); ?>" 
+                             style="width: 100%; height: 100%; object-fit: contain;">
+                    </div>
+                <?php endif; ?>
+                <div>
+                    <p class="text-muted mb-0">Merek:</p>
+                    <p class="mb-0"><strong><?php echo htmlspecialchars($product['merek']); ?></strong></p>
+                </div>
+            </div>
             
             <div class="row mt-4">
                 <div class="col-md-8">
