@@ -2,8 +2,7 @@
  * ============================================
  * FILE: filter.js
  * PURPOSE: Handle product filtering
- * LOCATION: MobileNest/assets/js/filter.js
- * FIXED: API path corrected to ../produk/get-produk.php
+ * MODE: HYBRID (PHP initial render + AJAX filter)
  * ============================================
  */
 
@@ -13,26 +12,37 @@
 function getSelectedFilters() {
     const filters = {
         brands: [],
-        prices: []
+        prices: [],
+        search: ''
     };
 
     // Get selected brands
-    const brandCheckboxes = document.querySelectorAll('input[type="checkbox"][id^="merek_"]');
+    const brandCheckboxes = document.querySelectorAll('input.brand-checkbox:checked');
     brandCheckboxes.forEach(checkbox => {
-        if (checkbox.checked) {
-            filters.brands.push(checkbox.value);
-        }
+        filters.brands.push(checkbox.value);
     });
 
     // Get selected prices
-    const priceCheckboxes = document.querySelectorAll('input[type="checkbox"][id^="harga_"]');
+    const priceCheckboxes = document.querySelectorAll('input.price-checkbox:checked');
     priceCheckboxes.forEach(checkbox => {
-        if (checkbox.checked) {
-            filters.prices.push(checkbox.value);
-        }
+        filters.prices.push(checkbox.value);
     });
 
+    // Get search query
+    const searchInput = document.getElementById('search_produk');
+    if (searchInput && searchInput.value.trim()) {
+        filters.search = searchInput.value.trim();
+    }
+
     return filters;
+}
+
+/**
+ * Check if any filters are active
+ */
+function hasActiveFilters() {
+    const filters = getSelectedFilters();
+    return filters.brands.length > 0 || filters.prices.length > 0 || filters.search !== '';
 }
 
 /**
@@ -43,7 +53,14 @@ async function applyFilter() {
         const filters = getSelectedFilters();
         console.log('Applying filters:', filters);
 
-        // Build query params
+        // If no filters selected, show all PHP-rendered products
+        if (!hasActiveFilters()) {
+            console.log('No filters active - showing all products from PHP');
+            showAllProducts();
+            return;
+        }
+
+        // Build query params for API
         const params = new URLSearchParams();
         
         if (filters.brands.length > 0) {
@@ -51,36 +68,34 @@ async function applyFilter() {
         }
 
         if (filters.prices.length > 0) {
-            // Parse price filters
-            let minPrice = 0;
-            let maxPrice = 999999999;
+            // Parse price filters - use the max price range if multiple selected
+            let minPrice = Infinity;
+            let maxPrice = 0;
 
             filters.prices.forEach(priceRange => {
                 const [min, max] = priceRange.split(':').map(Number);
-                if (minPrice < min) minPrice = min;
-                if (maxPrice > max) maxPrice = max;
+                minPrice = Math.min(minPrice, min);
+                maxPrice = Math.max(maxPrice, max);
             });
 
             params.append('min_price', minPrice);
             params.append('max_price', maxPrice);
         }
 
-        // Get search query if exists
-        const searchInput = document.getElementById('search_produk');
-        if (searchInput && searchInput.value) {
-            params.append('search', searchInput.value);
+        if (filters.search) {
+            params.append('search', filters.search);
         }
 
-        // Get sort option if exists
+        // Get sort option
         const sortSelect = document.getElementById('sort_option');
-        if (sortSelect) {
+        if (sortSelect && sortSelect.value) {
             params.append('sort', sortSelect.value);
         }
 
-        // FIXED: Correct path to get-produk.php (from assets/js to produk folder)
-        // list-produk.php is in /MobileNest/produk/
-        // filter.js is in /MobileNest/assets/js/
-        // So relative path from filter.js is: ../produk/get-produk.php
+        // Show loading state
+        showLoadingState();
+
+        // Fetch filtered products from API
         const response = await fetch(`../produk/get-produk.php?${params.toString()}`);
         
         if (!response.ok) {
@@ -88,8 +103,9 @@ async function applyFilter() {
         }
 
         const products = await response.json();
+        console.log('Filter result:', products.length, 'products');
+        
         renderProducts(products);
-        showFilterNotification('success', `Filter applied - Showing ${products.length} products`);
 
     } catch (error) {
         console.error('Error applying filter:', error);
@@ -98,7 +114,41 @@ async function applyFilter() {
 }
 
 /**
- * Render products to the page
+ * Show all PHP-rendered products
+ */
+function showAllProducts() {
+    const container = document.getElementById('products_container');
+    const productCards = container.querySelectorAll('.product-card');
+    
+    // Show all cards
+    productCards.forEach(card => {
+        card.style.display = 'block';
+    });
+    
+    // Update count
+    const countElement = document.getElementById('product_count');
+    if (countElement) {
+        countElement.textContent = productCards.length;
+    }
+    
+    console.log('Showing all', productCards.length, 'products');
+}
+
+/**
+ * Show loading state
+ */
+function showLoadingState() {
+    const container = document.getElementById('products_container');
+    container.innerHTML = `
+        <div class="col-12 text-center text-muted py-5">
+            <i class="bi bi-hourglass-split" style="font-size: 2rem; animation: spin 2s linear infinite;"></i>
+            <p class="mt-3">Mengfilter produk...</p>
+        </div>
+    `;
+}
+
+/**
+ * Render products from API response
  */
 function renderProducts(products) {
     const container = document.getElementById('products_container');
@@ -126,46 +176,48 @@ function renderProducts(products) {
 
     // Render product cards
     container.innerHTML = products.map(product => `
-        <div class="card border-0 shadow-sm h-100 transition">
-            <!-- Product Image -->
-            <div class="card-img-top bg-light d-flex align-items-center justify-content-center" style="height: 200px; position: relative; overflow: hidden;">
-                ${product.gambar ? `
-                    <img src="${escapeHtml(product.gambar)}" alt="${escapeHtml(product.nama_produk)}" style="width: 100%; height: 100%; object-fit: cover;">
-                ` : `
-                    <i class="bi bi-phone" style="font-size: 3rem; color: #ccc;"></i>
-                `}
-                <span class="badge bg-danger position-absolute top-0 end-0 m-2">-${Math.floor(Math.random() * 30) + 5}%</span>
-            </div>
-            
-            <!-- Product Info -->
-            <div class="card-body">
-                <h6 class="card-title mb-2" title="${escapeHtml(product.nama_produk)}">${escapeHtml(product.nama_produk)}</h6>
-                
-                <!-- Brand Info -->
-                <div class="d-flex align-items-center mb-2">
-                    <span class="badge bg-secondary">${escapeHtml(product.merek)}</span>
-                    <span class="badge bg-info ms-2">Stok: ${product.stok}</span>
+        <div class="product-card">
+            <div class="card border-0 shadow-sm h-100 transition">
+                <!-- Product Image -->
+                <div class="card-img-top bg-light d-flex align-items-center justify-content-center" style="height: 200px; position: relative; overflow: hidden;">
+                    ${product.gambar ? `
+                        <img src="${escapeHtml(product.gambar)}" alt="${escapeHtml(product.nama_produk)}" style="width: 100%; height: 100%; object-fit: cover;">
+                    ` : `
+                        <i class="bi bi-phone" style="font-size: 3rem; color: #ccc;"></i>
+                    `}
+                    <span class="badge bg-danger position-absolute top-0 end-0 m-2">-15%</span>
                 </div>
                 
-                <!-- Rating -->
-                <div class="mb-2">
-                    <span class="text-warning">
-                        ${getRatingStars(4.5)}
-                    </span>
-                    <span class="text-muted small">(${Math.floor(Math.random() * 200) + 50})</span>
-                </div>
-                
-                <!-- Price -->
-                <h5 class="text-primary mb-3">Rp ${formatPrice(product.harga)}</h5>
-                
-                <!-- Buttons -->
-                <div class="d-grid gap-2">
-                    <a href="produk/detail-produk.php?id=${product.id_produk}" class="btn btn-outline-primary btn-sm">
-                        <i class="bi bi-search"></i> Lihat Detail
-                    </a>
-                    <button type="button" class="btn btn-primary btn-sm" onclick="addToCartFromFilter(${product.id_produk}, 1, '${escapeHtml(product.nama_produk)}')">
-                        <i class="bi bi-cart-plus"></i> Keranjang
-                    </button>
+                <!-- Product Info -->
+                <div class="card-body">
+                    <h6 class="card-title mb-2" title="${escapeHtml(product.nama_produk)}">${escapeHtml(product.nama_produk)}</h6>
+                    
+                    <!-- Brand Info -->
+                    <div class="d-flex align-items-center mb-2">
+                        <span class="badge bg-secondary">${escapeHtml(product.merek)}</span>
+                        <span class="badge bg-info ms-2">Stok: ${product.stok}</span>
+                    </div>
+                    
+                    <!-- Rating -->
+                    <div class="mb-2">
+                        <span class="text-warning">
+                            ${getRatingStars(product.rating || 4.5)}
+                        </span>
+                        <span class="text-muted small">(${product.terjual || 0})</span>
+                    </div>
+                    
+                    <!-- Price -->
+                    <h5 class="text-primary mb-3">Rp ${formatPrice(product.harga)}</h5>
+                    
+                    <!-- Buttons -->
+                    <div class="d-grid gap-2">
+                        <a href="detail-produk.php?id=${product.id_produk}" class="btn btn-outline-primary btn-sm">
+                            <i class="bi bi-search"></i> Lihat Detail
+                        </a>
+                        <button type="button" class="btn btn-primary btn-sm" onclick="addToCart(${product.id_produk}, 1)">
+                            <i class="bi bi-cart-plus"></i> Keranjang
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -179,7 +231,7 @@ function resetFilter() {
     console.log('Resetting filters');
 
     // Uncheck all checkboxes
-    document.querySelectorAll('input[type="checkbox"]').forEach(checkbox => {
+    document.querySelectorAll('input.brand-checkbox, input.price-checkbox').forEach(checkbox => {
         checkbox.checked = false;
     });
 
@@ -195,8 +247,8 @@ function resetFilter() {
         sortSelect.value = 'terbaru';
     }
 
-    // Reload all products
-    applyFilter();
+    // Show all products (PHP-rendered)
+    showAllProducts();
     showFilterNotification('info', 'Filter reset - Showing all products');
 }
 
@@ -262,76 +314,23 @@ function getRatingStars(rating) {
 }
 
 /**
- * Add to cart from filter page
- */
-function addToCartFromFilter(id_produk, quantity = 1, nama_produk = '') {
-    console.log('Adding to cart:', id_produk, quantity, nama_produk);
-    
-    // Check if user logged in
-    if (typeof userLoggedIn === 'undefined' || !userLoggedIn) {
-        alert('Silakan login terlebih dahulu untuk menambahkan produk ke keranjang');
-        window.location.href = 'user/login.php';
-        return;
-    }
-
-    // Call existing cart function if available
-    if (typeof window.addToCart === 'function') {
-        window.addToCart(id_produk, quantity);
-    } else {
-        // Fallback: send to cart API
-        fetch('transaksi/keranjang-aksi.php', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/x-www-form-urlencoded',
-            },
-            body: `action=add&id_produk=${id_produk}&quantity=${quantity}`
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                showFilterNotification('success', `${nama_produk} ditambahkan ke keranjang`);
-            } else {
-                showFilterNotification('error', data.message || 'Gagal menambahkan ke keranjang');
-            }
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            showFilterNotification('error', 'Gagal menambahkan ke keranjang');
-        });
-    }
-}
-
-/**
  * Initialize filter event listeners
  */
 document.addEventListener('DOMContentLoaded', function() {
-    console.log('Filter JS initialized');
-
-    // Get filter buttons
-    const applyBtn = document.querySelector('button[onclick="applyFilters()"]') || 
-                     document.querySelector('button:contains("Terapkan")');
-    const resetBtn = document.querySelector('button[onclick="resetFilters()"]') || 
-                     document.querySelector('button:contains("Reset")');
+    console.log('Filter JS initialized (Hybrid Mode)');
 
     // Setup filter button click handlers
     document.querySelectorAll('button').forEach(btn => {
-        if (btn.textContent.includes('Terapkan')) {
+        const text = btn.textContent.toLowerCase();
+        if (text.includes('terapkan') || text.includes('filter')) {
             btn.onclick = applyFilter;
         }
-        if (btn.textContent.includes('Reset')) {
+        if (text.includes('reset')) {
             btn.onclick = resetFilter;
         }
     });
 
-    // Setup checkbox change handlers
-    document.querySelectorAll('.brand-checkbox, .price-checkbox').forEach(checkbox => {
-        checkbox.addEventListener('change', function() {
-            // Optional: auto-apply filter when checkbox changes
-            // applyFilter();
-        });
-    });
-
-    // Setup search input handler
+    // Setup search input handler - auto-apply on typing
     const searchInput = document.getElementById('search_produk');
     if (searchInput) {
         searchInput.addEventListener('input', function() {
@@ -339,7 +338,7 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    // Setup sort change handler
+    // Setup sort change handler - auto-apply on change
     const sortSelect = document.getElementById('sort_option');
     if (sortSelect) {
         sortSelect.addEventListener('change', function() {
@@ -347,8 +346,17 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    // Load initial products
-    applyFilter();
+    // Setup checkbox change handlers - optional auto-apply
+    document.querySelectorAll('.brand-checkbox, .price-checkbox').forEach(checkbox => {
+        checkbox.addEventListener('change', function() {
+            // Optional: uncomment to auto-apply on checkbox change
+            // applyFilter();
+        });
+    });
 
-    console.log('Filter JS setup complete');
+    // Note: Don't call applyFilter() on init for hybrid mode
+    // Products already rendered by PHP
+    // Only call applyFilter() when user applies filters
+
+    console.log('Filter JS setup complete (Hybrid Mode)');
 });
