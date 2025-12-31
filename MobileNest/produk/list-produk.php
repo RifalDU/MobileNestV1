@@ -139,12 +139,74 @@ include '../includes/header.php';
                     </div>
                 </div>
                 
-                <!-- Products Grid Container (AJAX Dynamic) -->
+                <!-- Products Grid Container -->
                 <div id="products_container" class="product-grid">
-                    <div class="col-12 text-center text-muted py-5">
-                        <i class="bi bi-hourglass-split" style="font-size: 2rem;"></i>
-                        <p class="mt-3">Memuat produk...</p>
+                    <?php
+                    // HYBRID APPROACH: Render initial products from PHP
+                    // Then filter.js can update via AJAX if user applies filters
+                    
+                    $sql = "SELECT * FROM produk WHERE status_produk = 'Tersedia' ORDER BY id_produk DESC";
+                    $result = mysqli_query($conn, $sql);
+                    
+                    if (mysqli_num_rows($result) > 0) {
+                        while ($produk = mysqli_fetch_assoc($result)) {
+                            $brand_logo = get_brand_logo_data($produk['merek']);
+                    ?>
+                    <div class="product-card" data-product-id="<?php echo $produk['id_produk']; ?>">
+                        <div class="card border-0 shadow-sm h-100 transition">
+                            <!-- Product Image -->
+                            <div class="card-img-top bg-light d-flex align-items-center justify-content-center" style="height: 200px; position: relative;">
+                                <i class="bi bi-phone" style="font-size: 3rem; color: #ccc;"></i>
+                                <span class="badge bg-danger position-absolute top-0 end-0 m-2">-15%</span>
+                            </div>
+                            
+                            <!-- Product Info -->
+                            <div class="card-body">
+                                <h6 class="card-title mb-2"><?php echo htmlspecialchars($produk['nama_produk']); ?></h6>
+                                
+                                <!-- Brand dengan Logo -->
+                                <div class="d-flex align-items-center mb-2">
+                                    <?php if ($brand_logo): ?>
+                                        <img src="<?php echo htmlspecialchars($brand_logo['image_url']); ?>" 
+                                             alt="<?php echo htmlspecialchars($produk['merek']); ?> Logo" 
+                                             style="width: 25px; height: 25px; object-fit: contain; margin-right: 8px;">
+                                    <?php endif; ?>
+                                    <p class="text-muted small mb-0"><?php echo htmlspecialchars($produk['merek']); ?></p>
+                                </div>
+                                
+                                <!-- Rating -->
+                                <div class="mb-2">
+                                    <span class="text-warning">
+                                        <i class="bi bi-star-fill"></i>
+                                        <i class="bi bi-star-fill"></i>
+                                        <i class="bi bi-star-fill"></i>
+                                        <i class="bi bi-star-fill"></i>
+                                        <i class="bi bi-star-half"></i>
+                                    </span>
+                                    <span class="text-muted small">(152)</span>
+                                </div>
+                                
+                                <!-- Price -->
+                                <h5 class="text-primary mb-3">Rp <?php echo number_format($produk['harga'], 0, ',', '.'); ?></h5>
+                                
+                                <!-- Buttons -->
+                                <div class="d-grid gap-2">
+                                    <a href="detail-produk.php?id=<?php echo $produk['id_produk']; ?>" class="btn btn-outline-primary btn-sm">
+                                        <i class="bi bi-search"></i> Lihat Detail
+                                    </a>
+                                    <button class="btn btn-primary btn-sm" onclick="addToCart(<?php echo $produk['id_produk']; ?>, 1)">
+                                        <i class="bi bi-cart-plus"></i> Tambah Keranjang
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
                     </div>
+                    <?php
+                        }
+                    } else {
+                        echo '<p class="text-center text-muted">Tidak ada produk tersedia</p>';
+                    }
+                    ?>
                 </div>
             </div>
         </div>
@@ -153,20 +215,60 @@ include '../includes/header.php';
 
 <!-- Scripts -->
 <script>
-    // Check if user is logged in (set this from backend if needed)
-    var userLoggedIn = <?php echo isset($_SESSION['user']) ? 'true' : 'false'; ?>;
+    // Set initial product count
+    var productCount = document.querySelectorAll('.product-card').length;
+    document.getElementById('product_count').textContent = productCount;
     
-    // Debug info
-    console.log('list-produk.php loaded');
-    console.log('userLoggedIn:', userLoggedIn);
+    console.log('list-produk.php loaded (Hybrid Mode)');
+    console.log('Initial products loaded:', productCount);
     console.log('products_container element:', document.getElementById('products_container'));
 </script>
 
-<!-- Load filter.js FIRST (contains rendering logic) -->
+<!-- Load filter.js FIRST (for AJAX filtering) -->
 <script src="../assets/js/filter.js"></script>
 
 <!-- Load cart functionality -->
 <script src="../assets/js/cart.js"></script>
 <script src="../assets/js/api-handler.js"></script>
+
+<script>
+/**
+ * Override addToCart to add notification
+ * This wraps the API handler function
+ */
+const originalAddToCart = window.addToCart;
+window.addToCart = async function(id_produk, quantity = 1) {
+    console.log('Adding to cart from list:', id_produk, quantity);
+    
+    try {
+        const result = await originalAddToCart(id_produk, quantity);
+        console.log('Result:', result);
+        
+        if (result.success) {
+            // Show success notification
+            const alert = document.createElement('div');
+            alert.className = 'alert alert-success alert-dismissible fade show position-fixed top-0 start-50 translate-middle-x mt-3';
+            alert.style.zIndex = '9999';
+            alert.innerHTML = `
+                <i class="bi bi-check-circle"></i> Produk berhasil ditambahkan ke keranjang!
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            `;
+            document.body.appendChild(alert);
+            
+            // Update cart count in navbar
+            updateCartCount();
+            
+            // Remove alert after 3 seconds
+            setTimeout(() => alert.remove(), 3000);
+        } else {
+            console.error('Add to cart failed:', result);
+            alert('Gagal menambahkan ke keranjang: ' + (result.message || 'Unknown error'));
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        alert('Terjadi kesalahan: ' + error.message);
+    }
+};
+</script>
 
 <?php include '../includes/footer.php'; ?>
