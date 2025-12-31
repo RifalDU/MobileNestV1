@@ -1,58 +1,51 @@
 <?php
 /**
  * Brand Logo Configuration
- * Contains CDN URLs for all smartphone brand logos
- * Used across the application for consistent branding
+ * Uses Simpleicons CDN for reliable, consistent brand logos
+ * CDN URL: https://cdn.jsdelivr.net/npm/simple-icons@latest/icons/
  */
 
 $brand_logos = [
     'Apple' => [
-        'url' => 'https://cdn.jsdelivr.net/gh/lipis/flag-icons@6.11.0/flags/4x3/us.svg',
-        'alt' => 'Apple Logo',
-        'image_url' => 'https://upload.wikimedia.org/wikipedia/commons/thumb/f/fa/Apple_logo_black.svg/800px-Apple_logo_black.svg.png'
+        'image_url' => 'https://cdn.jsdelivr.net/npm/simple-icons@latest/icons/apple.svg',
+        'alt' => 'Apple Logo'
     ],
     'Samsung' => [
-        'url' => 'https://cdn.jsdelivr.net/gh/lipis/flag-icons@6.11.0/flags/4x3/kr.svg',
-        'alt' => 'Samsung Logo',
-        'image_url' => 'https://upload.wikimedia.org/wikipedia/commons/thumb/2/24/Samsung_Logo.svg/800px-Samsung_Logo.svg.png'
+        'image_url' => 'https://cdn.jsdelivr.net/npm/simple-icons@latest/icons/samsung.svg',
+        'alt' => 'Samsung Logo'
     ],
     'Xiaomi' => [
-        'url' => 'https://cdn.jsdelivr.net/gh/lipis/flag-icons@6.11.0/flags/4x3/cn.svg',
-        'alt' => 'Xiaomi Logo',
-        'image_url' => 'https://upload.wikimedia.org/wikipedia/commons/thumb/b/b1/Xiaomi_logo.svg/800px-Xiaomi_logo.svg.png'
+        'image_url' => 'https://cdn.jsdelivr.net/npm/simple-icons@latest/icons/xiaomi.svg',
+        'alt' => 'Xiaomi Logo'
     ],
     'OPPO' => [
-        'url' => 'https://cdn.jsdelivr.net/gh/lipis/flag-icons@6.11.0/flags/4x3/cn.svg',
-        'alt' => 'OPPO Logo',
-        'image_url' => 'https://upload.wikimedia.org/wikipedia/commons/thumb/f/f6/OPPO_LOGO.svg/800px-OPPO_LOGO.svg.png'
+        'image_url' => 'https://cdn.jsdelivr.net/npm/simple-icons@latest/icons/oppo.svg',
+        'alt' => 'OPPO Logo'
     ],
     'Vivo' => [
-        'url' => 'https://cdn.jsdelivr.net/gh/lipis/flag-icons@6.11.0/flags/4x3/cn.svg',
-        'alt' => 'Vivo Logo',
-        'image_url' => 'https://upload.wikimedia.org/wikipedia/commons/thumb/8/80/Vivo_logo.svg/800px-Vivo_logo.svg.png'
+        'image_url' => 'https://cdn.jsdelivr.net/npm/simple-icons@latest/icons/vivo.svg',
+        'alt' => 'Vivo Logo'
     ],
     'Realme' => [
-        'url' => 'https://cdn.jsdelivr.net/gh/lipis/flag-icons@6.11.0/flags/4x3/in.svg',
-        'alt' => 'Realme Logo',
-        'image_url' => 'https://upload.wikimedia.org/wikipedia/commons/thumb/4/4d/Realme_logo.svg/800px-Realme_logo.svg.png'
+        'image_url' => 'https://cdn.jsdelivr.net/npm/simple-icons@latest/icons/realme.svg',
+        'alt' => 'Realme Logo'
     ]
 ];
 
 /**
  * Get brand logo URL
  * @param string $brand_name - The name of the phone brand
- * @param string $type - 'image_url' for brand logo or 'url' for country flag
  * @return string - The CDN URL of the logo
  */
-function get_brand_logo_url($brand_name, $type = 'image_url') {
+function get_brand_logo_url($brand_name) {
     global $brand_logos;
     
-    if (isset($brand_logos[$brand_name][$type])) {
-        return $brand_logos[$brand_name][$type];
+    if (isset($brand_logos[$brand_name]['image_url'])) {
+        return $brand_logos[$brand_name]['image_url'];
     }
     
-    // Return default icon if brand not found
-    return 'https://via.placeholder.com/50?text=Phone';
+    // Return generic phone icon if brand not found
+    return 'https://cdn.jsdelivr.net/npm/simple-icons@latest/icons/phone.svg';
 }
 
 /**
@@ -64,12 +57,8 @@ function get_brand_logo_url($brand_name, $type = 'image_url') {
 function get_brand_logo_html($brand_name, $attributes = []) {
     global $brand_logos;
     
-    if (!isset($brand_logos[$brand_name])) {
-        return '<img src="https://via.placeholder.com/50?text=Phone" alt="Phone Logo" class="brand-logo" style="width: 50px; height: 50px;">';
-    }
-    
-    $logo_url = $brand_logos[$brand_name]['image_url'];
-    $alt_text = $brand_logos[$brand_name]['alt'];
+    $logo_url = get_brand_logo_url($brand_name);
+    $alt_text = isset($brand_logos[$brand_name]['alt']) ? $brand_logos[$brand_name]['alt'] : 'Brand Logo';
     
     // Default attributes
     $default_class = 'brand-logo';
@@ -77,7 +66,7 @@ function get_brand_logo_html($brand_name, $attributes = []) {
     $style = isset($attributes['style']) ? $attributes['style'] : 'width: 50px; height: 50px;';
     
     return sprintf(
-        '<img src="%s" alt="%s" class="%s" style="%s">',
+        '<img src="%s" alt="%s" class="%s" style="%s" loading="lazy">',
         htmlspecialchars($logo_url),
         htmlspecialchars($alt_text),
         htmlspecialchars($class),
@@ -97,10 +86,34 @@ function get_all_brands() {
 /**
  * Get brand logo array data
  * @param string $brand_name - The name of the phone brand
- * @return array|null - Array with 'url', 'alt', 'image_url' or null if not found
+ * @return array|null - Array with 'image_url', 'alt' or null if not found
  */
 function get_brand_logo_data($brand_name) {
     global $brand_logos;
     return isset($brand_logos[$brand_name]) ? $brand_logos[$brand_name] : null;
+}
+
+/**
+ * Get brand logo with fallback
+ * @param string $brand_name - The name of the phone brand
+ * @param string $fallback_color - Fallback background color (hex)
+ * @return string - HTML with logo or icon
+ */
+function get_brand_logo_with_fallback($brand_name, $fallback_color = '#f0f0f0') {
+    $logo_data = get_brand_logo_data($brand_name);
+    
+    if (!$logo_data) {
+        return sprintf(
+            '<div style="width: 50px; height: 50px; background-color: %s; border-radius: 50%%; display: flex; align-items: center; justify-content: center; font-weight: bold; color: #666; font-size: 12px;">%s</div>',
+            htmlspecialchars($fallback_color),
+            htmlspecialchars(substr($brand_name, 0, 2))
+        );
+    }
+    
+    return sprintf(
+        '<img src="%s" alt="%s" style="width: 50px; height: 50px; object-fit: contain;" loading="lazy">',
+        htmlspecialchars($logo_data['image_url']),
+        htmlspecialchars($logo_data['alt'])
+    );
 }
 ?>
