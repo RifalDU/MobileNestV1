@@ -8,21 +8,6 @@ include '../includes/header.php';
 ?>
 
 <style>
-    .filter-active .form-check-input:checked {
-        background-color: #667eea;
-        border-color: #667eea;
-    }
-
-    .brand-filter-item {
-        transition: all 0.3s ease;
-        cursor: pointer;
-    }
-
-    .brand-filter-item:hover {
-        background-color: #f5f5f5;
-        border-radius: 8px;
-    }
-
     .product-grid {
         display: grid;
         grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
@@ -31,6 +16,7 @@ include '../includes/header.php';
 
     .card.transition {
         transition: all 0.3s ease;
+        cursor: pointer;
     }
 
     .card.transition:hover {
@@ -75,7 +61,7 @@ include '../includes/header.php';
                                     $logo_data = get_brand_logo_data($brand);
                                     if ($logo_data):
                                 ?>
-                                <div class="form-check d-flex align-items-center mb-2 brand-filter-item p-2">
+                                <div class="form-check d-flex align-items-center mb-2 p-2" style="cursor: pointer;">
                                     <div style="width: 28px; height: 28px; margin-right: 8px; flex-shrink: 0;">
                                         <img src="<?php echo htmlspecialchars($logo_data['image_url']); ?>" 
                                              alt="<?php echo htmlspecialchars($brand); ?> Logo" 
@@ -153,7 +139,7 @@ include '../includes/header.php';
                     </div>
                 </div>
                 
-                <!-- Products Grid Container -->
+                <!-- Products Grid Container (AJAX Dynamic) -->
                 <div id="products_container" class="product-grid">
                     <div class="col-12 text-center text-muted py-5">
                         <i class="bi bi-hourglass-split" style="font-size: 2rem;"></i>
@@ -175,7 +161,12 @@ include '../includes/header.php';
     console.log('userLoggedIn:', userLoggedIn);
     console.log('products_container element:', document.getElementById('products_container'));
 </script>
+
+<!-- Load filter.js FIRST (contains rendering logic) -->
 <script src="../assets/js/filter.js"></script>
+
+<!-- Load cart functionality -->
 <script src="../assets/js/cart.js"></script>
+<script src="../assets/js/api-handler.js"></script>
 
 <?php include '../includes/footer.php'; ?>
