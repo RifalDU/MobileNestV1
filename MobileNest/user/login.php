@@ -2,15 +2,14 @@
 /**
  * Login Page (User Area)
  * Location: /MobileNest/user/login.php
- * Form Action: /MobileNest/includes/process_login.php
+ * 
+ * Handles both:
+ * 1. Display login form
+ * 2. Process login (POST request)
  * 
  * Redirect Logic:
  * - Admin → /MobileNest/admin/dashboard.php
  * - User → /MobileNest/index.php
- * 
- * Test Credentials:
- * Admin: username=admin, password=password123
- * User: username=user1, password=pass1
  */
 
 session_start();
@@ -33,6 +32,121 @@ unset($_SESSION['error']);
 unset($_SESSION['success']);
 
 $logged_out = isset($_GET['logged_out']);
+
+// ===== HANDLE LOGIN SUBMISSION =====
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['login'])) {
+    $username = trim($_POST['username'] ?? '');
+    $password = trim($_POST['password'] ?? '');
+    
+    // Validate input
+    if (empty($username) || empty($password)) {
+        $error = '❌ Username dan password harus diisi!';
+    } else {
+        // STRATEGY 1: Check ADMIN table first
+        $stmt = $conn->prepare("SELECT id_admin, username, password, nama_lengkap, email FROM admin WHERE username = ?");
+        if (!$stmt) {
+            $error = '❌ Database error: ' . $conn->error;
+        } else {
+            $stmt->bind_param('s', $username);
+            $stmt->execute();
+            $result = $stmt->get_result();
+            
+            if ($result->num_rows > 0) {
+                $admin = $result->fetch_assoc();
+                
+                // Try direct comparison first (if passwords are plain text)
+                if ($admin['password'] === $password) {
+                    // Admin login successful - PLAIN TEXT MATCH
+                    $_SESSION['authenticated'] = true;
+                    $_SESSION['role'] = 'admin';
+                    $_SESSION['id'] = $admin['id_admin'];
+                    $_SESSION['username'] = $admin['username'];
+                    $_SESSION['nama_lengkap'] = $admin['nama_lengkap'];
+                    $_SESSION['email'] = $admin['email'];
+                    $_SESSION['login_time'] = time();
+                    
+                    $stmt->close();
+                    header('Location: ' . SITE_URL . '/admin/dashboard.php');
+                    exit();
+                }
+                
+                // Try password_verify (if passwords are hashed)
+                elseif (password_verify($password, $admin['password'])) {
+                    // Admin login successful - HASHED MATCH
+                    $_SESSION['authenticated'] = true;
+                    $_SESSION['role'] = 'admin';
+                    $_SESSION['id'] = $admin['id_admin'];
+                    $_SESSION['username'] = $admin['username'];
+                    $_SESSION['nama_lengkap'] = $admin['nama_lengkap'];
+                    $_SESSION['email'] = $admin['email'];
+                    $_SESSION['login_time'] = time();
+                    
+                    $stmt->close();
+                    header('Location: ' . SITE_URL . '/admin/dashboard.php');
+                    exit();
+                } else {
+                    $error = '❌ Username atau password salah!';
+                }
+            } else {
+                // STRATEGY 2: Check USERS table if admin not found
+                $stmt->close();
+                $stmt = $conn->prepare("SELECT id_user, username, password, nama_lengkap, email, status_akun FROM users WHERE username = ?");
+                
+                if (!$stmt) {
+                    $error = '❌ Database error: ' . $conn->error;
+                } else {
+                    $stmt->bind_param('s', $username);
+                    $stmt->execute();
+                    $result = $stmt->get_result();
+                    
+                    if ($result->num_rows > 0) {
+                        $user = $result->fetch_assoc();
+                        
+                        // Check if account is active
+                        if ($user['status_akun'] !== 'Aktif') {
+                            $error = '❌ Akun Anda tidak aktif. Hubungi admin untuk mengaktifkan!';
+                        }
+                        // Try direct comparison first (if passwords are plain text)
+                        elseif ($user['password'] === $password) {
+                            // User login successful - PLAIN TEXT MATCH
+                            $_SESSION['authenticated'] = true;
+                            $_SESSION['role'] = 'user';
+                            $_SESSION['id'] = $user['id_user'];
+                            $_SESSION['username'] = $user['username'];
+                            $_SESSION['nama_lengkap'] = $user['nama_lengkap'];
+                            $_SESSION['email'] = $user['email'];
+                            $_SESSION['login_time'] = time();
+                            
+                            $stmt->close();
+                            header('Location: ' . SITE_URL . '/index.php');
+                            exit();
+                        }
+                        // Try password_verify (if passwords are hashed)
+                        elseif (password_verify($password, $user['password'])) {
+                            // User login successful - HASHED MATCH
+                            $_SESSION['authenticated'] = true;
+                            $_SESSION['role'] = 'user';
+                            $_SESSION['id'] = $user['id_user'];
+                            $_SESSION['username'] = $user['username'];
+                            $_SESSION['nama_lengkap'] = $user['nama_lengkap'];
+                            $_SESSION['email'] = $user['email'];
+                            $_SESSION['login_time'] = time();
+                            
+                            $stmt->close();
+                            header('Location: ' . SITE_URL . '/index.php');
+                            exit();
+                        } else {
+                            $error = '❌ Username atau password salah!';
+                        }
+                    } else {
+                        $error = '❌ Username tidak ditemukan!';
+                    }
+                    $stmt->close();
+                }
+            }
+        }
+    }
+}
 
 ?>
 <!DOCTYPE html>
@@ -264,8 +378,8 @@ $logged_out = isset($_GET['logged_out']);
             </div>
         <?php endif; ?>
 
-        <!-- Login Form -->
-        <form method="POST" action="<?php echo SITE_URL; ?>/includes/process_login.php" id="loginForm">
+        <!-- Login Form (Process handled on this page) -->
+        <form method="POST" action="" id="loginForm">
             <div class="mb-3">
                 <label for="username" class="form-label">
                     <i class="bi bi-person-fill"></i> Username
@@ -302,7 +416,7 @@ $logged_out = isset($_GET['logged_out']);
                 </label>
             </div>
 
-            <button type="submit" class="btn btn-login w-100 mb-3">
+            <button type="submit" name="login" class="btn btn-login w-100 mb-3">
                 <i class="bi bi-box-arrow-in-right"></i> Masuk
             </button>
         </form>
@@ -315,7 +429,7 @@ $logged_out = isset($_GET['logged_out']);
         <!-- Register Link -->
         <div class="register-link">
             <p class="mb-0">Belum punya akun? 
-                <a href="register.php">퉰dPendaftaran</a>
+                <a href="register.php">📝 Pendaftaran</a>
             </p>
         </div>
 
