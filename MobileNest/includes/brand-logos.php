@@ -1,7 +1,7 @@
 <?php
 /**
  * Brand Logo Configuration
- * Uses Simpleicons CDN for reliable, consistent brand logos
+ * Uses Simpleicons CDN + fallback sources for reliable brand logos
  * CDN URL: https://cdn.jsdelivr.net/npm/simple-icons@latest/icons/
  */
 
@@ -27,8 +27,14 @@ $brand_logos = [
         'alt' => 'Vivo Logo'
     ],
     'Realme' => [
-        'image_url' => 'https://cdn.jsdelivr.net/npm/simple-icons@latest/icons/realme.svg',
-        'alt' => 'Realme Logo'
+        // Primary: Try Wikimedia (verified working)
+        'image_url' => 'https://upload.wikimedia.org/wikipedia/en/1/12/Realme_Logo.png',
+        'alt' => 'Realme Logo',
+        // Fallback sources if primary fails
+        'fallback_urls' => [
+            'https://www.realme.com/favicon.ico',
+            'https://cdn.jsdelivr.net/npm/simple-icons@latest/icons/smartphone.svg'
+        ]
     ]
 ];
 
@@ -45,14 +51,14 @@ function get_brand_logo_url($brand_name) {
     }
     
     // Return generic phone icon if brand not found
-    return 'https://cdn.jsdelivr.net/npm/simple-icons@latest/icons/phone.svg';
+    return 'https://cdn.jsdelivr.net/npm/simple-icons@latest/icons/smartphone.svg';
 }
 
 /**
- * Get brand logo HTML
+ * Get brand logo HTML with fallback support
  * @param string $brand_name - The name of the phone brand
  * @param array $attributes - Additional HTML attributes (class, style, etc)
- * @return string - HTML img tag with logo
+ * @return string - HTML img tag with logo and onerror fallback
  */
 function get_brand_logo_html($brand_name, $attributes = []) {
     global $brand_logos;
@@ -60,17 +66,32 @@ function get_brand_logo_html($brand_name, $attributes = []) {
     $logo_url = get_brand_logo_url($brand_name);
     $alt_text = isset($brand_logos[$brand_name]['alt']) ? $brand_logos[$brand_name]['alt'] : 'Brand Logo';
     
+    // Get fallback URLs if available
+    $fallback_urls = isset($brand_logos[$brand_name]['fallback_urls']) ? $brand_logos[$brand_name]['fallback_urls'] : [];
+    
     // Default attributes
     $default_class = 'brand-logo';
     $class = isset($attributes['class']) ? $attributes['class'] : $default_class;
     $style = isset($attributes['style']) ? $attributes['style'] : 'width: 50px; height: 50px;';
     
+    // Build onerror handler for fallback sources
+    $onerror = 'this.style.display="none"';
+    if (!empty($fallback_urls)) {
+        $fallback_chain = "";
+        foreach ($fallback_urls as $index => $url) {
+            $fallback_chain .= "this.src='" . htmlspecialchars($url) . "';";
+        }
+        $onerror = $fallback_chain . "if(this.src===this.dataset.lastSrc)this.style.display='none';";
+    }
+    
     return sprintf(
-        '<img src="%s" alt="%s" class="%s" style="%s" loading="lazy">',
+        '<img src="%s" alt="%s" class="%s" style="%s" loading="lazy" onerror="%s" data-last-src="%s">',
         htmlspecialchars($logo_url),
         htmlspecialchars($alt_text),
         htmlspecialchars($class),
-        htmlspecialchars($style)
+        htmlspecialchars($style),
+        $onerror,
+        htmlspecialchars(end($fallback_urls) ?: $logo_url)
     );
 }
 
@@ -86,7 +107,7 @@ function get_all_brands() {
 /**
  * Get brand logo array data
  * @param string $brand_name - The name of the phone brand
- * @return array|null - Array with 'image_url', 'alt' or null if not found
+ * @return array|null - Array with 'image_url', 'alt', 'fallback_urls' or null if not found
  */
 function get_brand_logo_data($brand_name) {
     global $brand_logos;
@@ -94,26 +115,42 @@ function get_brand_logo_data($brand_name) {
 }
 
 /**
- * Get brand logo with fallback
+ * Get brand logo with visual fallback
+ * Shows initials in circle if image fails to load
  * @param string $brand_name - The name of the phone brand
  * @param string $fallback_color - Fallback background color (hex)
- * @return string - HTML with logo or icon
+ * @return string - HTML with logo or styled text fallback
  */
-function get_brand_logo_with_fallback($brand_name, $fallback_color = '#f0f0f0') {
+function get_brand_logo_with_visual_fallback($brand_name, $fallback_color = '#f0f0f0') {
     $logo_data = get_brand_logo_data($brand_name);
     
     if (!$logo_data) {
         return sprintf(
-            '<div style="width: 50px; height: 50px; background-color: %s; border-radius: 50%%; display: flex; align-items: center; justify-content: center; font-weight: bold; color: #666; font-size: 12px;">%s</div>',
+            '<div class="brand-logo-fallback" style="width: 50px; height: 50px; background-color: %s; border-radius: 50%%; display: flex; align-items: center; justify-content: center; font-weight: bold; color: #666; font-size: 12px; flex-shrink: 0;">%s</div>',
             htmlspecialchars($fallback_color),
             htmlspecialchars(substr($brand_name, 0, 2))
         );
     }
     
+    $logo_url = $logo_data['image_url'];
+    $alt_text = $logo_data['alt'];
+    $initials = substr($brand_name, 0, 2);
+    
     return sprintf(
-        '<img src="%s" alt="%s" style="width: 50px; height: 50px; object-fit: contain;" loading="lazy">',
-        htmlspecialchars($logo_data['image_url']),
-        htmlspecialchars($logo_data['alt'])
+        '<div style="position: relative; width: 50px; height: 50px; flex-shrink: 0;">
+            <img src="%s" alt="%s" 
+                 style="width: 100%%; height: 100%%; object-fit: contain; display: block;" 
+                 loading="lazy" 
+                 onerror="this.style.display=\'none\'; this.nextElementSibling.style.display=\'flex\';">
+            <div class="brand-logo-fallback" 
+                 style="position: absolute; top: 0; left: 0; width: 100%%; height: 100%%; background-color: %s; border-radius: 50%%; display: none; align-items: center; justify-content: center; font-weight: bold; color: #666; font-size: 12px;">
+                %s
+            </div>
+        </div>',
+        htmlspecialchars($logo_url),
+        htmlspecialchars($alt_text),
+        htmlspecialchars($fallback_color),
+        htmlspecialchars($initials)
     );
 }
 ?>
