@@ -3,6 +3,7 @@
  * FILE: filter.js
  * PURPOSE: Handle product filtering
  * LOCATION: MobileNest/assets/js/filter.js
+ * FIXED: API path corrected to ../produk/get-produk.php
  * ============================================
  */
 
@@ -76,8 +77,11 @@ async function applyFilter() {
             params.append('sort', sortSelect.value);
         }
 
-        // Fetch from API
-        const response = await fetch(`produk/get-produk.php?${params.toString()}`);
+        // FIXED: Correct path to get-produk.php (from assets/js to produk folder)
+        // list-produk.php is in /MobileNest/produk/
+        // filter.js is in /MobileNest/assets/js/
+        // So relative path from filter.js is: ../produk/get-produk.php
+        const response = await fetch(`../produk/get-produk.php?${params.toString()}`);
         
         if (!response.ok) {
             throw new Error('API Error: ' + response.statusText);
@@ -159,7 +163,7 @@ function renderProducts(products) {
                     <a href="produk/detail-produk.php?id=${product.id_produk}" class="btn btn-outline-primary btn-sm">
                         <i class="bi bi-search"></i> Lihat Detail
                     </a>
-                    <button type="button" class="btn btn-primary btn-sm" onclick="addToCartFromFilter(${product.id_produk}, 1, '${escapeHtml(product.nama_produk)}'" >
+                    <button type="button" class="btn btn-primary btn-sm" onclick="addToCartFromFilter(${product.id_produk}, 1, '${escapeHtml(product.nama_produk)}')">
                         <i class="bi bi-cart-plus"></i> Keranjang
                     </button>
                 </div>
