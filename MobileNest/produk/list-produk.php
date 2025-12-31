@@ -1,6 +1,7 @@
 <?php
 session_start();
 require_once '../config.php';
+require_once '../includes/brand-logos.php';
 
 $page_title = "Daftar Produk";
 include '../includes/header.php';
@@ -25,29 +26,32 @@ include '../includes/header.php';
                             <input type="text" class="form-control" placeholder="Ketik nama produk..." id="search_produk">
                         </div>
                         
-                        <!-- Filter Merek -->
+                        <!-- Filter Merek dengan Logo -->
                         <div class="mb-4">
                             <label class="form-label fw-bold">Merek</label>
-                            <div class="form-check">
-                                <input class="form-check-input" type="checkbox" value="Samsung" id="merek_samsung" disabled>
-                                <label class="form-check-label" for="merek_samsung">Samsung</label>
+                            <?php
+                            $available_brands = get_all_brands();
+                            foreach ($available_brands as $brand):
+                                $logo_data = get_brand_logo_data($brand);
+                                if ($logo_data):
+                            ?>
+                            <div class="form-check d-flex align-items-center mb-3">
+                                <div style="width: 30px; height: 30px; margin-right: 10px;">
+                                    <img src="<?php echo htmlspecialchars($logo_data['image_url']); ?>" 
+                                         alt="<?php echo htmlspecialchars($brand); ?> Logo" 
+                                         style="width: 100%; height: 100%; object-fit: contain;">
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" value="<?php echo htmlspecialchars($brand); ?>" id="merek_<?php echo strtolower($brand); ?>">
+                                    <label class="form-check-label" for="merek_<?php echo strtolower($brand); ?>">
+                                        <?php echo htmlspecialchars($brand); ?>
+                                    </label>
+                                </div>
                             </div>
-                            <div class="form-check">
-                                <input class="form-check-input" type="checkbox" value="Apple" id="merek_apple" disabled>
-                                <label class="form-check-label" for="merek_apple">Apple</label>
-                            </div>
-                            <div class="form-check">
-                                <input class="form-check-input" type="checkbox" value="Xiaomi" id="merek_xiaomi" disabled>
-                                <label class="form-check-label" for="merek_xiaomi">Xiaomi</label>
-                            </div>
-                            <div class="form-check">
-                                <input class="form-check-input" type="checkbox" value="Oppo" id="merek_oppo" disabled>
-                                <label class="form-check-label" for="merek_oppo">Oppo</label>
-                            </div>
-                            <div class="form-check">
-                                <input class="form-check-input" type="checkbox" value="Realme" id="merek_realme" disabled>
-                                <label class="form-check-label" for="merek_realme">Realme</label>
-                            </div>
+                            <?php 
+                                endif;
+                            endforeach; 
+                            ?>
                         </div>
                         
                         <!-- Filter Harga -->
@@ -114,6 +118,7 @@ include '../includes/header.php';
                     
                     if (mysqli_num_rows($result) > 0) {
                         while ($produk = mysqli_fetch_assoc($result)) {
+                            $brand_logo = get_brand_logo_data($produk['merek']);
                     ?>
                     <div class="col-md-6 col-lg-4">
                         <div class="card border-0 shadow-sm h-100 transition" style="cursor: pointer;">
@@ -126,7 +131,16 @@ include '../includes/header.php';
                             <!-- Product Info -->
                             <div class="card-body">
                                 <h6 class="card-title mb-2"><?php echo htmlspecialchars($produk['nama_produk']); ?></h6>
-                                <p class="text-muted small mb-2"><?php echo htmlspecialchars($produk['merek']); ?></p>
+                                
+                                <!-- Brand dengan Logo -->
+                                <div class="d-flex align-items-center mb-2">
+                                    <?php if ($brand_logo): ?>
+                                        <img src="<?php echo htmlspecialchars($brand_logo['image_url']); ?>" 
+                                             alt="<?php echo htmlspecialchars($produk['merek']); ?> Logo" 
+                                             style="width: 25px; height: 25px; object-fit: contain; margin-right: 8px;">
+                                    <?php endif; ?>
+                                    <p class="text-muted small mb-0"><?php echo htmlspecialchars($produk['merek']); ?></p>
+                                </div>
                                 
                                 <!-- Rating -->
                                 <div class="mb-2">
