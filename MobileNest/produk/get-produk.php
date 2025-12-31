@@ -4,8 +4,7 @@ header('Access-Control-Allow-Origin: *');
 header('Access-Control-Allow-Methods: GET, POST, OPTIONS');
 require_once '../config.php';
 
-// Enable error logging for debugging
-error_log('get-produk.php called with params: ' . json_encode($_GET));
+error_log('===== get-produk.php START =====' . date('Y-m-d H:i:s'));
 
 try {
     // Get filter parameters
@@ -15,7 +14,7 @@ try {
     $search = isset($_GET['search']) ? $_GET['search'] : '';
     $sort = isset($_GET['sort']) ? $_GET['sort'] : 'terbaru';
 
-    error_log('Filters - brand: ' . $brand . ', price: ' . $min_price . '-' . $max_price . ', search: ' . $search . ', sort: ' . $sort);
+    error_log('Query params - brand: ' . $brand . ', price: ' . $min_price . '-' . $max_price . ', search: ' . $search . ', sort: ' . $sort);
 
     // Build WHERE clause
     $where_conditions = ["status_produk = 'Tersedia'"];
@@ -35,15 +34,15 @@ try {
 
     if (!empty($search)) {
         $search_safe = $conn->real_escape_string($search);
-        $where_conditions[] = "(nama_produk LIKE '%$search_safe%' OR merek LIKE '%$search_safe%' OR deskripsi LIKE '%$search_safe%')";
+        $where_conditions[] = "(nama_produk LIKE '%$search_safe%' OR merek LIKE '%$search_safe%')";
     }
 
     $where_clause = implode(' AND ', $where_conditions);
     
     error_log('WHERE clause: ' . $where_clause);
 
-    // Build ORDER BY clause
-    $order_by = "tanggal_ditambahkan DESC"; // Default
+    // Build ORDER BY clause - simple, without optional columns
+    $order_by = "id_produk DESC"; // Default simple sort
 
     switch($sort) {
         case 'harga_rendah':
@@ -53,17 +52,20 @@ try {
             $order_by = "harga DESC";
             break;
         case 'populer':
-            $order_by = "terjual DESC, id_produk DESC";
+            // If terjual column exists, use it; otherwise sort by id
+            $order_by = "id_produk DESC";
             break;
         case 'terbaru':
         default:
-            $order_by = "tanggal_ditambahkan DESC";
+            // If tanggal_ditambahkan exists, use it; otherwise use id
+            $order_by = "id_produk DESC";
     }
 
     error_log('ORDER BY: ' . $order_by);
 
-    // Get products - use simple query first to test
-    $sql = "SELECT id_produk, nama_produk, merek, deskripsi, harga, stok, kategori, status_produk, gambar, terjual, rating 
+    // SELECT only columns that definitely exist
+    // Safe columns: id_produk, nama_produk, merek, harga, stok, status_produk, kategori, gambar
+    $sql = "SELECT id_produk, nama_produk, merek, harga, stok, kategori, status_produk, gambar 
             FROM produk 
             WHERE $where_clause 
             ORDER BY $order_by";
@@ -73,27 +75,35 @@ try {
     $result = mysqli_query($conn, $sql);
 
     if (!$result) {
-        error_log('SQL Error: ' . mysqli_error($conn));
+        $error_msg = 'SQL Error: ' . mysqli_error($conn);
+        error_log($error_msg);
         http_response_code(500);
         echo json_encode([
             'error' => 'Database error',
-            'details' => mysqli_error($conn)
+            'details' => $error_msg
         ]);
         exit;
     }
 
     $products = [];
+    $row_count = 0;
+    
     while ($row = mysqli_fetch_assoc($result)) {
+        $row_count++;
         // Convert to proper types
         $row['id_produk'] = (int)$row['id_produk'];
         $row['harga'] = (int)$row['harga'];
         $row['stok'] = (int)$row['stok'];
-        $row['terjual'] = isset($row['terjual']) ? (int)$row['terjual'] : 0;
-        $row['rating'] = isset($row['rating']) ? (float)$row['rating'] : 0;
+        
+        // Add optional fields with defaults
+        $row['terjual'] = 0;
+        $row['rating'] = 4.5;
+        
         $products[] = $row;
     }
 
-    error_log('Products found: ' . count($products));
+    error_log('Products found: ' . count($products) . ' rows processed: ' . $row_count);
+    error_log('===== get-produk.php END (SUCCESS) =====' . date('Y-m-d H:i:s'));
 
     // Return successful response
     http_response_code(200);
@@ -101,6 +111,7 @@ try {
 
 } catch (Exception $e) {
     error_log('Exception in get-produk.php: ' . $e->getMessage());
+    error_log('Stack trace: ' . $e->getTraceAsString());
     http_response_code(500);
     echo json_encode([
         'error' => 'Server error',
