@@ -3,15 +3,20 @@
  * Logout Handler
  * Destroys session and redirects to login page
  * 
- * Location: includes/ (not api/) - This is a helper, not an API endpoint
+ * Location: includes/logout.php
+ * Redirect to: user/login.php?logged_out=true
  * 
  * Usage: Click logout link that points to this file
- * <a href="includes/logout.php">Logout</a>
+ * <a href="<?php echo SITE_URL; ?>/includes/logout.php">Logout</a>
  */
 
 session_start();
+require_once dirname(__DIR__) . '/config.php';
 
 // Destroy all session variables
+if (isset($_SESSION)) {
+    $_SESSION = array();
+}
 session_destroy();
 
 // Clear session cookie
@@ -28,8 +33,8 @@ if (ini_get('session.use_cookies')) {
     );
 }
 
-// Redirect to login page
-header('Location: ../login.php?logged_out=true');
+// Redirect to login page with success message
+header('Location: ' . SITE_URL . '/user/login.php?logged_out=true');
 exit();
 
 ?>
