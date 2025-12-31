@@ -6,6 +6,9 @@
  * ============================================
  */
 
+// Debounce timer for search
+let searchDebounceTimer = null;
+
 /**
  * Get all selected filters from checkboxes
  */
@@ -141,7 +144,7 @@ function showLoadingState() {
     const container = document.getElementById('products_container');
     container.innerHTML = `
         <div class="col-12 text-center text-muted py-5">
-            <i class="bi bi-hourglass-split" style="font-size: 2rem; animation: spin 2s linear infinite;"></i>
+            <i class="bi bi-hourglass-split" style="font-size: 2rem;"></i>
             <p class="mt-3">Mengfilter produk...</p>
         </div>
     `;
@@ -330,11 +333,17 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 
-    // Setup search input handler - auto-apply on typing
+    // Setup search input handler with DEBOUNCE (wait 500ms after user stops typing)
     const searchInput = document.getElementById('search_produk');
     if (searchInput) {
         searchInput.addEventListener('input', function() {
-            applyFilter();
+            // Clear previous timer
+            clearTimeout(searchDebounceTimer);
+            
+            // Set new timer - only call applyFilter after 500ms of no typing
+            searchDebounceTimer = setTimeout(() => {
+                applyFilter();
+            }, 500);
         });
     }
 
